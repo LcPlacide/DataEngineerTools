@@ -64,6 +64,7 @@ Werkzeug = "==1.0.1"
 WTForms = "==2.3.3"
 
 [dev-packages]
+pylint = "*"
 
 [requires]
 python_version = "3.8"
