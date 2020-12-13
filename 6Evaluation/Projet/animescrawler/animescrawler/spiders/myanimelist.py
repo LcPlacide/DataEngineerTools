@@ -32,20 +32,25 @@ class MyanimelistSpider(scrapy.Spider):
             yield Request(anime_link,callback=self.parse_anime_links)
 
     def parse_anime_links(self,response):
-        yield AnimeItem(
-            main_title = response.css("h1").css("strong::text").extract_first(),
-            other_titles = response.xpath("//div[@style='width: 225px']/div[@class='spaceit_pad']/text()").extract(),
-            score = response.css(".score-label::text").extract_first(),
-            synopsis = response.css("td").css("p::text").extract_first(),
-            ranked_popularity = response.css(".di-ib").css("strong::text").extract(),
-            genres = response.xpath("//span[@itemprop='genre']/text()").extract(),
-            producers = response.xpath("//div[@style='width: 225px']").xpath("//a[contains(@href,'/anime/producer')]/text()").extract(),
-            Type = response.xpath("//div[@style='width: 225px']").xpath('//a[contains(@href,"//myanimelist.net/topanime.php?type=")]/text()').extract_first(),
-            related_anime = {
-            "table":response.xpath("//table[@class='anime_detail_related_anime']/tr/td").extract(),
-            "rownames":response.xpath("//table[@class='anime_detail_related_anime']/tr/td/text()").extract(),
-            "names":response.xpath("//table[@class='anime_detail_related_anime']/tr/td/a/text()").extract()
-            },
-            duration_rating = response.xpath("//div[@style='width: 225px']/div/text()").extract()
-        )
+        border = response.xpath("//div[@style='width: 225px']")
+        
+        divs= [div for div in border.css("div") if div.css("span::text").extract_first() in ["Duration:","Rating:","Type:"]]
+        border_infos=dict([(div.css("span::text").extract_first(),div.css("::text").extract()[-1])for div in divs])
 
+        table= response.xpath("//table[@class='anime_detail_related_anime']/tr")
+        related_anime= dict([(tr.css("td::text").extract_first().replace(":",""),tr.css("td a::text").extract()) for tr in table])
+
+        yield AnimeItem(
+            main_title = response.css("h1 strong::text").extract_first(),
+            other_titles = border.xpath("//div[@class='spaceit_pad']/text()").extract(),
+            score = response.css(".score-label::text").extract_first(),
+            synopsis = response.xpath("//p[@itemprop='description']").css("::text").extract(),
+            ranked = response.xpath("//div[@class='di-ib ml12 pl20 pt8']/span[@class='numbers ranked']/strong/text()").extract_first(),
+            popularity = response.xpath("//div[@class='di-ib ml12 pl20 pt8']/span[@class='numbers popularity']/strong/text()").extract_first(),
+            genres = response.xpath("//span[@itemprop='genre']/text()").extract(),
+            producers=border.xpath("//a[contains(@href,'/anime/producer')]/text()").extract(),
+            Type= border_infos["Type:"],
+            related_anime=related_anime,
+            duration=border_infos["Duration:"],
+            rating= border_infos["Rating:"]
+        )

@@ -6,52 +6,71 @@
 
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
-import pandas as pd
+from datetime import time
 
 
 class AnimescrawlerPipeline:
     def process_item(self, item, spider):
+        if item["main_title"]:
+            item["main_title"]=clean_string(item["main_title"])
         if item["score"]:
-            try:
-                item["score"]=float(item["score"])
-            except ValueError:
-                item["score"]=None
+            item["score"]=clean_number(item["score"],"float")
+        if item["synopsis"]:
+            item["synopsis"]=clean_string(item["synopsis"],to_join=True)
+        if item["Type"]:
+            item["Type"]=clean_string(item["Type"])
+        if item["genres"]:
+            item["genres"]=clean_string(item["genres"])
         if item["other_titles"]:
-            item["other_titles"]= [elt.strip() for elt in item["other_titles"] if elt.strip()!='']
+            item["other_titles"]= clean_string(item["other_titles"],as_set=True)
         if item["producers"]:
-            item["producers"]= set(item["producers"])
-        if item["ranked_popularity"]:
-            item["ranked_popularity"]= {"rank":item["ranked_popularity"][0].replace("#",""),
-                                        "popularity":item["ranked_popularity"][1].replace("#","")}
+            item["producers"]= clean_string(item["producers"],as_set=True)
+        if item["ranked"]:
+            item["ranked"]=clean_number(item["ranked"],"int")
+        if item["popularity"]:
+            item["popularity"]=clean_number(item["popularity"],"int")
         if item["related_anime"]:
-            item["related_anime"]["rownames"]=[elt for elt in item["related_anime"]["rownames"] if elt.find(":")!=-1]
-            item["related_anime"] = clean_related_anime(item["related_anime"]["table"], 
-                                                item["related_anime"]["rownames"], 
-                                                item["related_anime"]["names"])
-        if item["duration_rating"]:
-            item["duration_rating"] = clean_duration_rating(item["duration_rating"])                             
+            item["related_anime"]=clean_string(item["related_anime"])
+        if item["duration"]:
+            item["duration"] = clean_duration(item["duration"])
+        if item["rating"]:
+            item["rating"]=clean_string(item["rating"])                            
         return item
 
-def clean_related_anime(table,rowname,name):
-    if len(table)>0:
-        res,l=[None,[]]*len(rowname),rowname+name
-        table=pd.Series(table)
-        for elt in l:
-            find_elt=table.str.contains(">"+elt+"<",regex=False)
-            if find_elt.sum()!=0:
-                n=find_elt.argmax()
-            else:
-                continue
-            if elt in name:
-                res[n]=res[n]+[elt]
-            else:
-                res[n]=elt[:len(elt)-1]
-        res = dict([(res[i],res[i+1]) for i in range(0,len(res),2) if res[i+1]!=[]])
+def clean_string(field,as_set=False,to_join=False):
+    NA=['','None',"N/A",'Unknown']
+    if type(field)==type("") and field not in NA:
+        return field.strip()
+    elif type(field)==type([]) and field!=[]:
+        res=[elt.strip() for elt in field if elt.strip() not in NA]
+        if to_join and res!=None:
+            res=" ".join(res)
+            if res.find("No synopsis information has been added to this title")!=-1:
+                return None
+            return res
+        elif as_set and res!=None:
+            return set(res)
         return res
+    elif type(field)==type(set([])) and field!=set([]):
+        return {elt.strip() for elt in field if elt.strip() not in NA}
+    elif type(field)==type(dict([])) and field!={}:
+        return dict([(key,clean_string(field[key])) for key in field.keys()])
     return None
 
-def clean_duration_rating(duration_rating):
-    duration_rating = pd.Series([elt.strip() for elt in duration_rating if elt.strip()!='']) 
-    duration_line = duration_rating.str.contains("hr.|min.|per ep.").argmax()
-    return {"duration":duration_rating.iloc[duration_line],
-            "rating":duration_rating.iloc[duration_line+1]}
+def clean_number(field,type):
+    try:
+        if type=="int":
+            return int(field.replace("#",""))
+        elif type=="float":
+            return float(field.replace("#",""))
+    except ValueError:
+        return None
+
+def clean_duration(field):
+    field=clean_string(field)
+    if field!=None:
+        d, field_list= set(["hr.","min.","sec."]), field.split(" ")
+        if len(field)>1 and not set(field_list).isdisjoint(d):
+            d=dict([(key,int(field_list[field_list.index(key)-1])) if key in field_list[1:] else (key,0) for key in d])
+            return time(d["hr."],d["min."],d["sec."])
+    return field
