@@ -7,6 +7,7 @@
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 from datetime import time
+import pymongo
 
 
 class AnimescrawlerPipeline:
@@ -34,7 +35,11 @@ class AnimescrawlerPipeline:
         if item["duration"]:
             item["duration"] = clean_duration(item["duration"])
         if item["rating"]:
-            item["rating"]=clean_string(item["rating"])                            
+            item["rating"]=clean_string(item["rating"])
+        if item["episodes"]:
+            item["episodes"]=clean_number(item["episodes"],"int")
+        if item["status"]:
+            item["status"]=clean_string(item["status"])
         return item
 
 def clean_string(field,as_set=False,to_join=False):
@@ -68,9 +73,24 @@ def clean_number(field,type):
 
 def clean_duration(field):
     field=clean_string(field)
-    if field!=None:
+    if field not in [None,'Unknown']:
         d, field_list= set(["hr.","min.","sec."]), field.split(" ")
         if len(field)>1 and not set(field_list).isdisjoint(d):
             d=dict([(key,int(field_list[field_list.index(key)-1])) if key in field_list[1:] else (key,0) for key in d])
             return time(d["hr."],d["min."],d["sec."])
-    return field
+    return None
+
+class MongoPipeline(object):
+
+    collection_name = 'scrapy_items'
+
+    def open_spider(self, spider):
+        self.client = pymongo.MongoClient()
+        self.db = self.client["lemonde"]
+
+    def close_spider(self, spider):
+        self.client.close()
+
+    def process_item(self, item, spider):
+        self.db[self.collection_name].insert_one(dict(item))
+        return item

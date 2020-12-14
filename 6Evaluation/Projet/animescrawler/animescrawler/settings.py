@@ -28,7 +28,7 @@ ROBOTSTXT_OBEY = True
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 2.5
+ DOWNLOAD_DELAY = 0.5
 #RANDOMIZE_DOWNLOAD_DELAY = True
 
 # The download delay setting will honor only one of:
@@ -68,12 +68,13 @@ COOKIES_ENABLED = False
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'animescrawler.pipelines.AnimescrawlerPipeline': 300,
+    'animescrawler.pipelines.AnimescrawlerPipeline': 100,
+    #'newscrawler.pipelines.MongoPipeline': 300
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
-AUTOTHROTTLE_ENABLED = True
+#AUTOTHROTTLE_ENABLED = True
 # The initial download delay
 #AUTOTHROTTLE_START_DELAY = 2
 # The maximum download delay to be set in case of high latencies

@@ -32,4 +32,4 @@ user_agent_list = [
 
 
 def get_random_agent():
-    return random.choice(user_agent_list)
+    return {'User-Agent':random.choice(user_agent_list)}

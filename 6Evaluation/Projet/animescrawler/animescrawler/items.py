@@ -17,6 +17,8 @@ class AnimeItem(scrapy.Item):
     genres = scrapy.Field()
     producers = scrapy.Field()
     Type = scrapy.Field()
+    episodes=scrapy.Field()
+    status=scrapy.Field()
     related_anime = scrapy.Field()
     duration = scrapy.Field()
     rating = scrapy.Field()
