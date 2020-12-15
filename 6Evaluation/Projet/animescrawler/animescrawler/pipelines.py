@@ -6,9 +6,11 @@
 
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
-from datetime import time
+from datetime import datetime
 import pymongo
 
+server_name=None
+server_name="mongo"
 
 class AnimescrawlerPipeline:
     def process_item(self, item, spider):
@@ -54,10 +56,10 @@ def clean_string(field,as_set=False,to_join=False):
                 return None
             return res
         elif as_set and res!=None:
-            return set(res)
+            return list(set(res))
         return res
     elif type(field)==type(set([])) and field!=set([]):
-        return {elt.strip() for elt in field if elt.strip() not in NA}
+        return list({elt.strip() for elt in field if elt.strip() not in NA})
     elif type(field)==type(dict([])) and field!={}:
         return dict([(key,clean_string(field[key])) for key in field.keys()])
     return None
@@ -77,7 +79,7 @@ def clean_duration(field):
         d, field_list= set(["hr.","min.","sec."]), field.split(" ")
         if len(field)>1 and not set(field_list).isdisjoint(d):
             d=dict([(key,int(field_list[field_list.index(key)-1])) if key in field_list[1:] else (key,0) for key in d])
-            return time(d["hr."],d["min."],d["sec."])
+            return datetime.today().replace(hour=d["hr."],minute=d["min."],second=d["sec."],microsecond=0)
     return None
 
 class MongoPipeline(object):
@@ -85,8 +87,11 @@ class MongoPipeline(object):
     collection_name = 'scrapy_items'
 
     def open_spider(self, spider):
-        self.client = pymongo.MongoClient()
-        self.db = self.client["lemonde"]
+        if server_name!=None:
+            self.client = pymongo.MongoClient(server_name)
+        else:
+            self.client = pymongo.MongoClient()
+        self.db = self.client["anime"]
 
     def close_spider(self, spider):
         self.client.close()

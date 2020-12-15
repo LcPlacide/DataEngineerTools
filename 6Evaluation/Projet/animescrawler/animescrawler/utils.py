@@ -30,6 +30,5 @@ user_agent_list = [
     'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:59.0) Gecko/20100101 Firefox/59.0'
 ]
 
-
 def get_random_agent():
     return {'User-Agent':random.choice(user_agent_list)}
