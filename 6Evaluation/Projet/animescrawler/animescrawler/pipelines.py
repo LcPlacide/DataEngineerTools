@@ -44,43 +44,48 @@ class AnimescrawlerPipeline:
             item["status"]=clean_string(item["status"])
         return item
 
-def clean_string(field,as_set=False,to_join=False):
-    NA=['','None',"N/A",'Unknown']
-    if type(field)==type("") and field not in NA:
+def clean_string(field,as_set=False,to_join=False,NaN=None):
+    NA=['','None',"N/A",'Unknown',None,[],dict(),set(),NaN]
+    if type(field)==str and field.strip() not in NA:
         return field.strip()
-    elif type(field)==type([]) and field!=[]:
+    elif type(field)==list and field not in NA:
         res=[elt.strip() for elt in field if elt.strip() not in NA]
-        if to_join and res!=None:
+        if to_join and res not in NA:
             res=" ".join(res)
-            if res.find("No synopsis information has been added to this title")!=-1:
-                return None
-            return res
-        elif as_set and res!=None:
+            if res not in NA and res.find("No synopsis")==-1:
+                return res
+        elif as_set and res not in NA:
             return list(set(res))
-        return res
-    elif type(field)==type(set([])) and field!=set([]):
-        return list({elt.strip() for elt in field if elt.strip() not in NA})
-    elif type(field)==type(dict([])) and field!={}:
-        return dict([(key,clean_string(field[key])) for key in field.keys()])
-    return None
+        if res not in NA:
+            return res
+    elif type(field)==set and field not in NA:
+        res=list({elt.strip() for elt in field if elt.strip() not in NA})
+        if res not in NA:
+            return res
+    elif type(field)==dict and field not in NA:
+        res=dict([(key,clean_string(field[key])) for key in field.keys() if clean_string(field[key]) not in NA])
+        if res not in NA:
+            return res
+    return NaN
 
-def clean_number(field,type):
+def clean_number(field,type,NaN=None):
     try:
         if type=="int":
             return int(field.replace("#",""))
         elif type=="float":
             return float(field.replace("#",""))
     except ValueError:
-        return None
+        return NaN
 
-def clean_duration(field):
-    field=clean_string(field)
-    if field not in [None,'Unknown']:
+def clean_duration(field,NaN=None):
+    NA=['','None',"N/A",'Unknown',None,[],dict(),set(),NaN]
+    field=clean_string(field,NaN=NaN)
+    if field not in NA and type(field)==type(""):
         d, field_list= set(["hr.","min.","sec."]), field.split(" ")
         if len(field)>1 and not set(field_list).isdisjoint(d):
             d=dict([(key,int(field_list[field_list.index(key)-1])) if key in field_list[1:] else (key,0) for key in d])
             return datetime.today().replace(hour=d["hr."],minute=d["min."],second=d["sec."],microsecond=0)
-    return None
+    return NaN
 
 class MongoPipeline(object):
 

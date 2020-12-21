@@ -14,15 +14,15 @@ class MyanimelistSpider(scrapy.Spider):
     name = 'myanimelist'
     allowed_domains = ['myanimelist.net']
     start_urls = ['http://myanimelist.net/anime.php',]
-    handle_httpstatus_list = [403]
+    handle_httpstatus_list = [403,404]
 
     def __init__(self, CAPTCHA_DETECTION=True, *args, **kwargs):
         super(MyanimelistSpider, self).__init__(*args, **kwargs)
         self.CAPTCHA_DETECTION=CAPTCHA_DETECTION
 
     def parse(self, response):
-        if response.status==403:
-            self.handle_403(response,0)
+        if response.status in [403,404]:
+            self.handle_error(response,0)
         elif response.status==200:
             self.CAPTCHA_DETECTION=True
             menu_index_links = set(response.css("#horiznav_nav").css("a::attr(href)").extract())
@@ -30,23 +30,30 @@ class MyanimelistSpider(scrapy.Spider):
                 yield Request(index_link,callback=self.parse_index_links,headers=get_random_agent())
 
     def parse_index_links(self, response):
-        if response.status==403:
-            self.handle_403(response,1)
+        if response.status in [403,404]:
+            self.handle_error(response,1)
         elif response.status==200:
             self.CAPTCHA_DETECTION=True
             try:
                 nb_page = int(response.css(".normal_header").css("a::text").extract()[-1])
                 last_link_page = response.urljoin(response.css(".normal_header").css("a::attr(href)").extract()[-1]) 
                 link_common_part = last_link_page.replace("show="+str((nb_page-1)*50),"show=")
-                all_page_links = [ link_common_part+str(i) for i in range(0,nb_page*50,50)]
-                for page_link in all_page_links:
-                    yield Request(page_link,callback=self.parse_page_links,headers=get_random_agent())
+                if nb_page%20==0 and find_page_nb(response.url,link_common_part)<find_page_nb(last_link_page,link_common_part):
+                    yield Request(last_link_page,callback=self.parse_index_links,headers=get_random_agent())
+                elif nb_page%20!=0:
+                    all_page_links = [ link_common_part+str(i) for i in range(0,(nb_page)*50,50)]
+                    for page_link in all_page_links:
+                        yield Request(page_link,callback=self.parse_page_links,headers=get_random_agent())
+                else:
+                    all_page_links = [ link_common_part+str(i) for i in range(0,(nb_page+1)*50,50)]
+                    for page_link in all_page_links:
+                        yield Request(page_link,callback=self.parse_page_links,headers=get_random_agent())
             except IndexError:
-                self.handle_403(response,1)
+                self.handle_error(response,1)
         
     def parse_page_links(self,response):
-        if response.status==403:
-            self.handle_403(response,2)
+        if response.status in [403,404]:
+            self.handle_error(response,2)
         elif response.status==200:
             self.CAPTCHA_DETECTION=True
             all_anime_links = set(response.css(".hoverinfo_trigger").css("a::attr(href)").extract())
@@ -54,8 +61,8 @@ class MyanimelistSpider(scrapy.Spider):
                 yield Request(anime_link,callback=self.parse_anime_links,headers=get_random_agent())
 
     def parse_anime_links(self,response):
-        if response.status==403:
-            self.handle_403(response,3)
+        if response.status in [403,404]:
+            self.handle_error(response,3)
         elif response.status==200:
             self.CAPTCHA_DETECTION=True
             border = response.xpath("//div[@style='width: 225px']")
@@ -85,9 +92,10 @@ class MyanimelistSpider(scrapy.Spider):
                 rating= border_infos["Rating:"]
             )
 
-    def handle_403(self,response,func_nb):
-        print(5*"\n","CAPTCHA POTENTIELLEMENT ACTIF")
-        self.captcha_solving(response)
+    def handle_error(self,response,func_nb):
+        if response.status==403:
+            print(5*"\n","CAPTCHA POTENTIELLEMENT ACTIF")
+            self.captcha_solving(response)
         if response.url not in retry.keys():
             retry[response.url]=1
             print("PARSE",func_nb,":",response.url,"non scrapé")
@@ -119,7 +127,7 @@ class MyanimelistSpider(scrapy.Spider):
                 chrome.get(response.url)
                 button=chrome.find_elements_by_xpath("//button[@type='submit'][@class='g-recaptcha']")[0]
                 button.click()
-                sleep(30)
+                sleep(60)
                 print("RESOLUTION TERMINEE","FERMETURE DE SELENIUM",sep="\n")
                 self.CAPTCHA_DETECTION=True
                 chrome.close()
@@ -128,3 +136,9 @@ class MyanimelistSpider(scrapy.Spider):
         except IndexError:
             return "CAPTCHA NON DETECTE, SITE ACCESSIBLE"
         return "SITE ACCESSIBLE DANS QUELQUES SECONDES"+5*"\n"
+
+def find_page_nb(url,common_part):
+    try:
+        return int(url.replace(common_part,""))
+    except ValueError:
+        return 0
