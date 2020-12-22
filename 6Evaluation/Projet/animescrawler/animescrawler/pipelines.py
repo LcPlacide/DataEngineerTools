@@ -52,11 +52,11 @@ def clean_string(field,as_set=False,to_join=False,NaN=None):
         res=[elt.strip() for elt in field if elt.strip() not in NA]
         if to_join and res not in NA:
             res=" ".join(res)
-            if res not in NA and res.find("No synopsis")==-1:
+            if  res not in NA and res.find("No synopsis")==-1:
                 return res
         elif as_set and res not in NA:
-            return list(set(res))
-        if res not in NA:
+            return clean_string(set(res))
+        elif res not in NA:
             return res
     elif type(field)==set and field not in NA:
         res=list({elt.strip() for elt in field if elt.strip() not in NA})
@@ -89,7 +89,7 @@ def clean_duration(field,NaN=None):
 
 class MongoPipeline(object):
 
-    collection_name = 'scrapy_items'
+    collection_name = 'myanimelist'
 
     def open_spider(self, spider):
         if server_name!=None:

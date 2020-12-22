@@ -3,6 +3,7 @@ from scrapy import Request
 from animescrawler.items import AnimeItem
 from animescrawler.utils import get_random_agent
 from selenium import webdriver
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from time import sleep
 from os import uname
 
@@ -98,24 +99,20 @@ class MyanimelistSpider(scrapy.Spider):
             self.captcha_solving(response)
         if response.url not in retry.keys():
             retry[response.url]=1
-            print("PARSE",func_nb,":",response.url,"non scrapé")
         if retry[response.url]<MAX_RETRY:
-            print("PARSE",func_nb,":","Echec de la tentative de scraping",retry[response.url],"de",response.url)
+            print("Echec de la tentative de scraping",retry[response.url],"de",response.url)
+            print("Tentative",retry[response.url],"de scraping planifiée")
             retry[response.url]+=1
             if func_nb==0:
-                print("PARSE 0: Tentative",retry[response.url],"de scraping planifiée")
                 return Request('http://myanimelist.net/anime.php',callback=self.parse)
             elif func_nb==1:
-                print("PARSE 1: Tentative",retry[response.url],"de scraping planifiée")
                 return Request(response.url,callback=self.parse_index_links)
             elif func_nb==2:
-                print("PARSE 2: Tentative",retry[response.url],"de scraping planifiée")
                 return Request(response.url,callback=self.parse_page_links)
             elif func_nb==3:
-                print("PARSE 3: Tentative",retry[response.url],"de scraping planifiée")
                 return Request(response.url,callback=self.parse_anime_links)
         else:
-            print("PARSE",func_nb,":","Nombre maximal d'essais (",MAX_RETRY,") atteint pour",response.url,"(url non scrapé)")
+            print("Nombre maximal d'essais (",MAX_RETRY,") atteint pour",response.url,"(url non scrapé)")
         return None
 
     def captcha_solving(self,response):
@@ -123,14 +120,14 @@ class MyanimelistSpider(scrapy.Spider):
             if self.CAPTCHA_DETECTION:
                 self.CAPTCHA_DETECTION=False
                 print("OUVERTURE DE SELENIUM","RESOLUTION DU CAPTCHA LANCEE",sep="\n")
-                chrome = webdriver.Chrome(executable_path="./chromedriver_mac" if not IS_LINUX else "./chromedriver_linux")
-                chrome.get(response.url)
-                button=chrome.find_elements_by_xpath("//button[@type='submit'][@class='g-recaptcha']")[0]
+                browser= webdriver.Remote("http://selenium:4444/wd/hub", DesiredCapabilities.FIREFOX)
+                browser.get(response.url)
+                button=browser.find_elements_by_xpath("//button[@type='submit'][@class='g-recaptcha']")[0]
                 button.click()
                 sleep(60)
                 print("RESOLUTION TERMINEE","FERMETURE DE SELENIUM",sep="\n")
                 self.CAPTCHA_DETECTION=True
-                chrome.close()
+                browser.quit()
             else:
                 print("RESOLUTION DU CAPTCHA EN COURS")
         except IndexError:

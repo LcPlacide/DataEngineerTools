@@ -41,4 +41,9 @@ services:
     command: ["pipenv", "run", "jupyter", "notebook", "--ip=0.0.0.0", "--no-browser", "--allow-root", "--NotebookApp.token=''"]
     volumes:
       - ./:/home/dev/code/
-  
+
+  selenium:
+    image: selenium/standalone-firefox
+    ports:
+    - 4444:4444
+      
