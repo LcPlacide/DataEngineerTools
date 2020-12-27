@@ -7,19 +7,17 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from time import sleep
 from os import uname
 
-retry={}
-MAX_RETRY=4
-IS_LINUX = uname().sysname=="Linux"
-
 class MyanimelistSpider(scrapy.Spider):
     name = 'myanimelist'
     allowed_domains = ['myanimelist.net']
     start_urls = ['http://myanimelist.net/anime.php',]
     handle_httpstatus_list = [403,404]
 
-    def __init__(self, CAPTCHA_DETECTION=True, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(MyanimelistSpider, self).__init__(*args, **kwargs)
-        self.CAPTCHA_DETECTION=CAPTCHA_DETECTION
+        self.CAPTCHA_DETECTION=True
+        self.browser= webdriver.Remote("http://selenium:4444/wd/hub", DesiredCapabilities.FIREFOX)
+        self.retry={"MAX_RETRY":4}
 
     def parse(self, response):
         if response.status in [403,404]:
@@ -68,11 +66,16 @@ class MyanimelistSpider(scrapy.Spider):
             self.CAPTCHA_DETECTION=True
             border = response.xpath("//div[@style='width: 225px']")
             
-            border_infos=dict([(key,None) for key in ["Duration:","Rating:","Type:","Episodes:","Status:"]])
+            border_infos=dict([(key,None) for key in ["Duration:","Rating:","Type:","Episodes:","Status:","Aired:","Premiered:"]])
             divs= [div for div in border.css("div") if div.css("span::text").extract_first() in border_infos.keys()]
             for div in divs:
-                border_infos[div.css("span::text").extract_first()]=div.css("::text").extract()[-1]
-
+                key=div.css("span::text").extract_first()
+                if key!="Premiered:":
+                    border_infos[div.css("span::text").extract_first()]=div.css("::text").extract()[-1]
+                else:
+                    val=div.css("::text").extract()
+                    val.remove(key)
+                    border_infos[div.css("span::text").extract_first()]= "".join(val)
             table= response.xpath("//table[@class='anime_detail_related_anime']/tr")
             related_anime= dict([(tr.css("td::text").extract_first().replace(":",""),tr.css("td a::text").extract()) for tr in table])
 
@@ -84,25 +87,28 @@ class MyanimelistSpider(scrapy.Spider):
                 ranked = response.xpath("//div[@class='di-ib ml12 pl20 pt8']/span[@class='numbers ranked']/strong/text()").extract_first(),
                 popularity = response.xpath("//div[@class='di-ib ml12 pl20 pt8']/span[@class='numbers popularity']/strong/text()").extract_first(),
                 genres = response.xpath("//span[@itemprop='genre']/text()").extract(),
-                producers=border.xpath("//a[contains(@href,'/anime/producer')]/text()").extract(),
-                Type= border_infos["Type:"],
-                related_anime=related_anime,
-                episodes=border_infos["Episodes:"],
-                status=border_infos["Status:"],
-                duration=border_infos["Duration:"],
-                rating= border_infos["Rating:"]
+                producers = border.xpath("//a[contains(@href,'/anime/producer')]/text()").extract(),
+                Type = border_infos["Type:"],
+                related_anime = related_anime,
+                episodes = border_infos["Episodes:"],
+                status = border_infos["Status:"],
+                duration = border_infos["Duration:"],
+                rating = border_infos["Rating:"],
+                aired = {"Aired:":border_infos["Aired:"],"Premiered:":border_infos["Premiered:"]},
+                image = border.css("img::attr(data-src)").extract_first(),
+                url = response.url
             )
 
     def handle_error(self,response,func_nb):
         if response.status==403:
             print(5*"\n","CAPTCHA POTENTIELLEMENT ACTIF")
             self.captcha_solving(response)
-        if response.url not in retry.keys():
-            retry[response.url]=1
-        if retry[response.url]<MAX_RETRY:
-            print("Echec de la tentative de scraping",retry[response.url],"de",response.url)
-            print("Tentative",retry[response.url],"de scraping planifiée")
-            retry[response.url]+=1
+        if response.url not in self.retry.keys():
+            self.retry[response.url]=1
+        if self.retry[response.url]<self.retry["MAX_RETRY"]:
+            print("Echec de la tentative de scraping",self.retry[response.url],"de",response.url)
+            self.retry[response.url]+=1
+            print("Tentative",self.retry[response.url],"de scraping planifiée")
             if func_nb==0:
                 return Request('http://myanimelist.net/anime.php',callback=self.parse)
             elif func_nb==1:
@@ -112,22 +118,20 @@ class MyanimelistSpider(scrapy.Spider):
             elif func_nb==3:
                 return Request(response.url,callback=self.parse_anime_links)
         else:
-            print("Nombre maximal d'essais (",MAX_RETRY,") atteint pour",response.url,"(url non scrapé)")
+            print("Nombre maximal d'essais (",self.retry["MAX_RETRY"],") atteint pour",response.url,"(url non scrapé)")
         return None
 
     def captcha_solving(self,response):
         try:
             if self.CAPTCHA_DETECTION:
                 self.CAPTCHA_DETECTION=False
-                print("OUVERTURE DE SELENIUM","RESOLUTION DU CAPTCHA LANCEE",sep="\n")
-                browser= webdriver.Remote("http://selenium:4444/wd/hub", DesiredCapabilities.FIREFOX)
-                browser.get(response.url)
-                button=browser.find_elements_by_xpath("//button[@type='submit'][@class='g-recaptcha']")[0]
+                print("RESOLUTION DU CAPTCHA LANCEE",sep="\n")
+                self.browser.get(response.url)
+                button=self.browser.find_elements_by_xpath("//button[@type='submit'][@class='g-recaptcha']")[0]
                 button.click()
                 sleep(60)
-                print("RESOLUTION TERMINEE","FERMETURE DE SELENIUM",sep="\n")
+                print("RESOLUTION TERMINEE",sep="\n")
                 self.CAPTCHA_DETECTION=True
-                browser.quit()
             else:
                 print("RESOLUTION DU CAPTCHA EN COURS")
         except IndexError:

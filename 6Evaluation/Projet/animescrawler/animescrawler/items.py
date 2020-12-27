@@ -22,4 +22,7 @@ class AnimeItem(scrapy.Item):
     related_anime = scrapy.Field()
     duration = scrapy.Field()
     rating = scrapy.Field()
+    aired = scrapy.Field()
+    image = scrapy.Field()
+    url= scrapy.Field()
     pass

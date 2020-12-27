@@ -42,6 +42,8 @@ class AnimescrawlerPipeline:
             item["episodes"]=clean_number(item["episodes"],"int")
         if item["status"]:
             item["status"]=clean_string(item["status"])
+        if item["aired"]:
+            item["aired"]=clean_aired(item["aired"])
         return item
 
 def clean_string(field,as_set=False,to_join=False,NaN=None):
@@ -68,13 +70,13 @@ def clean_string(field,as_set=False,to_join=False,NaN=None):
             return res
     return NaN
 
-def clean_number(field,type,NaN=None):
+def clean_number(field,type,NaN=None,suppr="#"):
     try:
         if type=="int":
-            return int(field.replace("#",""))
+            return int(field.replace(suppr,""))
         elif type=="float":
-            return float(field.replace("#",""))
-    except ValueError:
+            return float(field.replace(suppr,""))
+    except (ValueError,AttributeError):
         return NaN
 
 def clean_duration(field,NaN=None):
@@ -86,6 +88,59 @@ def clean_duration(field,NaN=None):
             d=dict([(key,int(field_list[field_list.index(key)-1])) if key in field_list[1:] else (key,0) for key in d])
             return datetime.today().replace(hour=d["hr."],minute=d["min."],second=d["sec."],microsecond=0)
     return NaN
+
+def find_month(name):
+    months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    if clean_string(name) in months:
+        nb=dict([(months[i],i+1) for i in range(len(months))])
+        return nb[clean_string(name)]
+    return None
+
+def to_date(day=None,month=None,year=None,NaN=None):
+    try:
+        d=clean_number(day,"int",suppr=",")
+        m=find_month(month)
+        y=clean_number(year,"int")
+        return datetime(day=d,month=m,year=y)
+    except (TypeError, ValueError):
+        try:
+            return datetime(month=m,year=y)
+        except (TypeError, ValueError):
+            if y!=None and y>1000:
+                return y
+            return NaN
+
+def clean_aired(field,NaN=None):
+    NA=['','None',"N/A",'Unknown',"?",None,[],dict(),set(),NaN]
+    res=clean_string(field)
+    if res not in NA:
+        for key in ["Aired:","Premiered:"]:
+            if key=="Aired:" and key in res.keys() and res[key] not in NA:
+                res[key]=res[key].split(" to ")
+                if len(res[key])==2:
+                    res[key]=[date.split(" ") for date in res[key]]
+                    res[key]=[to_date(date[1],date[0],date[2]) if len(date)==3 
+                            else NaN for date in res[key]]
+                elif len(res[key])==1:
+                    res[key]=res[key][0].split(" ")
+                    res[key]=[to_date(year=res[key][0]) if len(res[key])==1
+                        else to_date(res[key][1], res[key][0],res[key][2]) if len(res[key])==3
+                        else NaN]+[NaN]
+            elif key=="Premiered:" and key in res.keys() and res[key] not in NA:
+                if len(res[key].split(" "))==2:
+                    res[key]=res[key].split(" ")
+            else:
+                res[key]=[NaN,NaN]
+        res_key=["start","end","season","year"]
+        res_val=[res["Aired:"][0],res["Aired:"][1],res["Premiered:"][0],res["Premiered:"][1]]
+        if res_val[0] in NA and res_val[-1] not in NA:
+            res_val[0]=res_val[-1]
+        res_val[-2],res_val[-1]=None,None
+        res= dict([(key,val) for key,val in zip(res_key,res_val) if val not in NA])
+        if res not in NA:
+            return res
+    return NaN
+
 
 class MongoPipeline(object):
 
