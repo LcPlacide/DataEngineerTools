@@ -6,7 +6,7 @@
 
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
-from datetime import datetime
+from datetime import datetime,MAXYEAR
 import pymongo
 
 server_name=None
@@ -86,7 +86,7 @@ def clean_duration(field,NaN=None):
         d, field_list= set(["hr.","min.","sec."]), field.split(" ")
         if len(field)>1 and not set(field_list).isdisjoint(d):
             d=dict([(key,int(field_list[field_list.index(key)-1])) if key in field_list[1:] else (key,0) for key in d])
-            return datetime.today().replace(hour=d["hr."],minute=d["min."],second=d["sec."],microsecond=0)
+            return datetime(year=MAXYEAR,month=12,day=31,hour=d["hr."],minute=d["min."],second=d["sec."],microsecond=0)
     return NaN
 
 def find_month(name):
