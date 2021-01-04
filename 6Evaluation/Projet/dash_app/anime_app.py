@@ -148,7 +148,7 @@ if __name__ == '__main__':
         dash.dependencies.Output('mongo_request', 'children'),
         [dash.dependencies.Input('type_drop', 'value'),
         dash.dependencies.Input('rating_drop', 'value'),
-        dash.dependencies.Input('status_drop', 'value'),
+        dash.dependencies.Input('_drop', 'value'),
         dash.dependencies.Input('score_slider', 'value'),
         dash.dependencies.Input('duration_slider', 'value'),
         dash.dependencies.Input('episodes_slider', 'value'),

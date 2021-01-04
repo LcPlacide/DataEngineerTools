@@ -11,6 +11,7 @@ import pymongo
 
 server_name=None
 server_name="mongo"
+NA_image="https://media.istockphoto.com/vectors/no-image-available-icon-vector-id1216251206?k=6&m=1216251206&s=612x612&w=0&h=G8kmMKxZlh7WyeYtlIHJDxP5XRGm9ZXyLprtVJKxd-o="
 
 class AnimescrawlerPipeline:
     def process_item(self, item, spider):
@@ -44,6 +45,8 @@ class AnimescrawlerPipeline:
             item["status"]=clean_string(item["status"])
         if item["aired"]:
             item["aired"]=clean_aired(item["aired"])
+        if item["image"] and item["image"]==None:
+            item["image"]=NA_image 
         return item
 
 def clean_string(field,as_set=False,to_join=False,NaN=None):
