@@ -1,5 +1,7 @@
 import datetime
 from datetime import time,MAXYEAR,timedelta
+import pandas as pd
+import numpy as np
 
 
 def to_time(timedelta,to_datetime=False):
@@ -53,6 +55,7 @@ def init_components(collection):
             - radio_genres: valeurs et labels de radioItems "genres"
             - producers_val: valeurs et labels de la checklist "producers"
             - radio_producers: valeurs et labels de radioItems "producers"
+            - titles: valeurs et labels de la barre de recherche "titles"
     """
     # Création des valeurs et labels des dropdowns
     Type_val=collection.aggregate([{"$group" : {"_id" : "$Type"}}])
@@ -115,15 +118,19 @@ def init_components(collection):
     radio_producers=["All producers","Limit to","Exactly with","Exclude"]
 
 
+    # Création de la barre de recherche de l'onglet "Recommandation"
+    animes=list(collection.find({}))
+    titles=[{"label":anime["main_title"],"value":anime["main_title"]} for anime in animes]
+
     # Création du dictionnaire de sortie
     keys=["Type_val","rating_val","status_val",
             "duration_val","duration_label","episodes_val",
             "popularity_val","ranked_val","year_val","genres_val",
-            "radio_genres","producers_val","radio_producers"]
+            "radio_genres","producers_val","radio_producers","titles"]
     values=[Type_val,rating_val,status_val,duration_val,
             duration_label,episodes_val,popularity_val,
             ranked_val,year_val,genres_val,
-            radio_genres,producers_val,radio_producers]
+            radio_genres,producers_val,radio_producers,titles]
     return dict(list(zip(keys,values)))
 
 
@@ -161,7 +168,12 @@ def make_request(Type=["All types"],rating=["All ratings"],status=["All status"]
     if "All ratings" not in rating:
         filters["rating"]={"rating":{"$in":rating}}
     if len(duration["slider"])>0:
-        d=to_time([options["duration_val"][i] for i in duration["slider"]],True)
+        if duration["slider"] in [i for i in range(len(options["duration_val"]))]:
+            d=to_time([options["duration_val"][i] for i in duration["slider"]],True)
+        elif len([d for d in duration["slider"] if d>0])==2:
+            d=to_time(duration["slider"],True)
+        else:
+            d=to_time([min(options["duration_val"]),max(options["duration_val"])],True)
         filters["duration"]={ "$and": [ {"duration":{"$gte":min(d)}} , {"duration":{"$lte":max(d)}} ] }
         if "Include N\\A" in duration["check"]:
             filters["duration"]={"$or":[filters["duration"],{"duration":None}]}
@@ -186,12 +198,22 @@ def make_request(Type=["All types"],rating=["All ratings"],status=["All status"]
     if len(popularity)>0:
         filters["popularity"]={ "$and": [ {"popularity":{"$gte": min(popularity)}} , {"popularity":{"$lte": max(popularity)}} ] }
     if len(episodes["slider"])>0:
-        nb_epi=[options["episodes_val"][i] for i in episodes["slider"]]
+        if episodes["slider"] in [i for i in range(len(options["episodes_val"]))]:
+            nb_epi=[options["episodes_val"][i] for i in episodes["slider"]]
+        elif len([e for e in episodes["slider"] if e>=1])==2:
+           nb_epi=episodes["slider"]
+        else:
+            nb_epi=[min(options["episodes_val"]),max(options["episodes_val"])]
         filters["episodes"]={ "$and": [ {"episodes":{"$gte": min(nb_epi)}} , {"episodes":{"$lte": max(nb_epi)}} ] }
         if "Include N\\A" in episodes["check"]:
             filters["episodes"]={"$or":[filters["episodes"],{"episodes":None}]}
     if len(year["slider"])>0:
-        years=[options["year_val"][i] for i in year["slider"]]
+        if year["slider"] in [i for i in range(len(options["year_val"]))]:
+            years=[options["year_val"][i] for i in year["slider"]]
+        elif len([y for y in year["slider"] if y>=1900])==2:
+            years=year["slider"]
+        else:
+            years=[min(options["year_val"]),max(options["year_val"])]
         start={"$or":[{"aired.start":{"$gte":min(years)}},{"aired.start":{"$gte":datetime.datetime(min(years),1,1)}}]}
         end={"$or":[{"aired.start":{"$lte":max(years)}},{"aired.start":{"$lt":datetime.datetime(max(years),12,31)}}]}
         filters["aired"]={"$and":[start,end]}
@@ -208,28 +230,48 @@ def make_request(Type=["All types"],rating=["All ratings"],status=["All status"]
     return request
 
 
-def select_anime(request,collection,champs=[],max_result=10**30):
+def select_anime(request,collection,champs=[],max_result=10**30,sort={"fields":None,"order":None}):
     """
-    Sélection des animes de colletions 
+    Sélection des animés de collections 
     correspondant à request
 
     Args:
         request: requête mongo
         colletion: colletion à parcourir
         champs: liste de champs à récupérer
+        sort: dict indiquant si on doit trier les documents de clé champs et order
         max_result: taille maximale de la liste de sortie
     
     Return:
         liste d'animés validant request
     """
+    # Choix des champs à récupérés
     champs = dict([(champ,1) for champ in champs])
-    if champs!={}:
-        res=list(collection.find(request,champs))
+
+    # Lancement de la requête
+    if sort["fields"]==None or sort["order"]==None: 
+        if len(champs)>1:
+            res=list(collection.find(request,champs))
+        elif len(champs)==1:
+            res=[elt[list(champs.keys())[0]] for elt in list(collection.find(request,champs))]
+        else:
+            res= list(collection.find(request))
     else:
-        res= list(collection.find(request))
+        sorting=[(c,o) for c,o in zip(sort["fields"],sort["order"])]
+        if len(champs)>1:
+            res=list(collection.find(request,champs).sort(sorting))
+        elif len(champs)==1:
+            res=[elt[list(champs.keys())[0]] for elt in list(collection.find(request,champs).sort(sorting))]
+        else:
+            res= list(collection.find(request).sort(sorting))
+    
+    
+    # Limitation du nombre de résultat
     if len(res)>0:
         return res[0:min(max_result,len(res))]
+    
     return list(collection.find(request))
+
 
 def print_infos(selection,idx):
     """
@@ -311,4 +353,184 @@ def print_infos(selection,idx):
                         fields["start date"], fields["end date"],
                         fields["duration"], fields["episodes"],
                         fields["synopsis"], fields["related_anime"]),image,idx,table
-            
+
+
+def clean_selection(selection,collection,clean_yet=False):
+    """
+    Suppression  dans une sélection 
+    des animés liées entre eux
+
+    Args:
+        selection: liste de récommandations à traiter
+    Return:
+        liste de recommandations traitée
+    """
+    if not clean_yet:
+        ref_infos=find_references(selection,collection,champs=["main_title","related_anime"])
+        selection=pd.Series(selection)
+        for i in selection.index:
+            if not pd.Series(selection[i]).isna()[0]:
+                related_anime=ref_infos["related_anime"][ref_infos["main_title"].index(selection[i])]
+                selection[i+1:]=selection[i+1:].apply(lambda x: np.NaN if x in related_anime else x)
+        return list(selection.dropna())
+    return selection
+
+
+def find_references(references,collection,champs,NaN=None):
+    """
+    Formatage des infos de références pour la recommandation
+
+    Args:
+        references: titres des animés de références
+        collection: base de données comportant tous les animés
+        champs: liste de champs utilisés pour la recommandation 
+    Return:
+        infos de références corretement formatées
+    """
+    NA=[None,[],'None',NaN]
+    request=make_request(titles=references)
+    selection=select_anime(request,collection,champs)
+    infos=dict()
+    for anime in selection:
+        for champ in anime.keys():
+            if anime[champ] not in NA and champ!="_id":
+                if not champ in infos.keys():
+                    infos[champ]=[anime[champ]]
+                else:
+                    infos[champ].append(anime[champ])
+    if "duration" in infos.keys():
+        infos["duration"]=[elt.time() for elt in infos["duration"]]
+        infos["duration"]=[datetime.timedelta(hours=elt.hour,minutes=elt.minute,seconds=elt.second)for elt in infos["duration"]]
+        infos["duration"]=[int(elt.total_seconds()) for elt in infos["duration"]]
+    if "aired" in infos.keys():
+        infos["aired"]=[ elt["start"].year if type(infos["aired"])==dict and type(elt["start"])!=int 
+                        else elt["start"] if type(infos["aired"])==dict 
+                        else infos["aired"][0] for elt in infos["aired"]]
+    if "related_anime" in infos.keys():
+        for i in range(len(infos["related_anime"])):
+            related_anime=[]
+            for k in infos["related_anime"][i].keys():
+                if k!="Adaptation":
+                    related_anime = related_anime  + infos["related_anime"][i][k]
+            infos["related_anime"][i]=related_anime
+    return infos
+
+
+def partiesliste(seq):
+    p = []
+    i, imax = 0, 2**len(seq)-1
+    while i <= imax:
+        s = []
+        j, jmax = 0, len(seq)-1
+        while j <= jmax:
+            if (i>>j)&1 == 1:
+                s.append(seq[j])
+            j += 1
+        if len(s)>1:
+            p.append(s)
+        i += 1
+    p.sort(key=len,reverse=True)
+    return p
+
+
+def anime_recommandation(titles,collection,options,champs=["genres","duration","episodes","aired.start","main_title"],max_result=100):
+    """
+    Recommandation d'animés à partir d'autres d'animés
+
+    Args:
+        titles: titres des animés utilisé comme références
+        collection: base de données comportant tous les animés
+        champs: liste de champs utilisés pour la recommandation 
+        max_result: taille maximale de la liste de recommandation
+    
+    Returns:
+        liste d'animés recommandés
+    """
+    # Récupération d'infos sur les animés de références
+    ref_infos=find_references(titles,collection,champs)
+
+    # Recherche d'animés partageant possédeant les genres de référence
+    under_max,selection=False,[]
+    clean_yet=False
+    if "genres" in ref_infos.keys():
+        genres_c=[]
+        for elt in ref_infos["genres"]:
+            genres_c= genres_c + elt
+        request=make_request(options=options,genres={"radio":'Limit to',"check":list(set(genres_c))})
+        select=select_anime(request,collection,champs=["main_title"],sort={"fields":["score","popularity"],"order":[-1,-1]})
+        select= set(select).difference(ref_infos["main_title"])
+        selection.append(clean_selection(list(select),collection))
+        clean_yet=True
+        under_max=(len(selection[-1])<=max_result & len(selection[-1])>0)
+        if not under_max:
+            genres_c=[set(elt) for elt in ref_infos["genres"]]
+            common_genres=genres_c[0]
+            for elt in genres_c:
+                common_genres = elt&common_genres
+            if len(common_genres)==1:
+                request=make_request(options=options,genres={'radio':'Exactly with',"check":list(common_genres)})
+                select=select_anime(request,collection,champs=["main_title"],
+                                    sort={"fields":["score","popularity"],"order":[-1,-1]})
+                select= set(select).difference(ref_infos["main_title"])
+                if len(select)>0:
+                    selection.append(clean_selection(list(select),collection,clean_yet))
+                    clean_yet=True
+                    under_max=(len(selection[-1])<=max_result)
+            elif len(common_genres)>1:
+                common_genres=partiesliste(list(common_genres))
+                for elt in common_genres:
+                    if not under_max:
+                        request=make_request(options=options,genres={'radio':'Exactly with',"check":elt})
+                        select=select_anime(request,collection,champs=["main_title"],
+                                            sort={"fields":["score","popularity"],"order":[-1,-1]})
+                        select= set(select).difference(ref_infos["main_title"])
+                        if common_genres.index(elt)==0:
+                            selection.append(clean_selection(list(select),collection))
+                        elif len(selection[-1])==0 or len(select)<len(selection[-1]):
+                            selection[-1]=clean_selection(list(select),collection)
+                            clean_yet=True
+                            under_max=(len(selection[-1])<=max_result)
+                    else:
+                        break
+
+    # Recherche d'animés ayant environ la même durée
+    if "duration" in ref_infos.keys() and not under_max:
+        mean_duration=np.mean(ref_infos["duration"])
+        limits=[round(0.75*mean_duration),round(1.25*mean_duration)]
+        request=make_request(options=options,titles=selection[-1],duration={"check":[],"slider":limits})
+        select=select_anime(request,collection,champs=["main_title"],sort={"fields":["score","popularity"],"order":[-1,-1]})
+        if len(select)>0:
+            selection.append(clean_selection(select,collection,clean_yet))
+            clean_yet=True
+            under_max=(len(selection[-1])<=max_result)
+
+    # Recherche d'animés ayant environ le même nombre d'épisodes
+    if "episodes" in ref_infos.keys() and not under_max:
+        mean_episodes=np.mean(ref_infos["episodes"])
+        limits=[round(0.75*mean_episodes),round(1.25*mean_episodes)]
+        request=make_request(options=options,titles=selection[-1],episodes={"check":[],"slider":limits})
+        select=select_anime(request,collection,champs=["main_title"],sort={"fields":["score","popularity"],"order":[-1,-1]})
+        if len(select)>0:
+            selection.append(clean_selection(select,collection,clean_yet))
+            clean_yet=True
+            under_max=(len(selection[-1])<=max_result)
+
+    # Recherche d'animés ayant environ le même année
+    if "aired" in ref_infos.keys() and not under_max:
+        mean_year=np.mean(ref_infos["aired"])
+        limits=[round(mean_year)-20,round(mean_year)+20]
+        request=make_request(options=options,titles=selection[-1],year={"check":[],"slider":limits})
+        select=select_anime(request,collection,champs=["main_title"],sort={"fields":["score","popularity"],"order":[-1,-1]})
+        if len(select)>0:
+            selection.append(clean_selection(select,collection,clean_yet))
+            clean_yet=True
+            under_max=(len(selection[-1])<=max_result)
+    
+    # Renvoi de la meilleur sélection
+    len_selection=pd.Series(selection).apply(lambda s: len(s) if len(s)!=0 else 10**30)
+    best_selection=selection[len_selection.argmin()]
+    request=make_request(options=options,
+    titles=clean_selection(best_selection,collection,clean_yet))
+    best_selection= select_anime(request,collection,max_result=max_result,
+                                    sort={"fields":["score","popularity"],"order":[-1,-1]})
+    return best_selection
