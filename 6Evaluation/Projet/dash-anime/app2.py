@@ -343,6 +343,7 @@ if __name__ == '__main__':
         elif 'back-button-reco' in changed_id and len(titles)>0:
             if len(selection)>0 and current_result_idx!=0:
                 current_result_idx-=1
+
         return print_infos(selection,current_result_idx)
 
 # Main

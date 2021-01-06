@@ -403,9 +403,8 @@ def find_references(references,collection,champs,NaN=None):
         infos["duration"]=[datetime.timedelta(hours=elt.hour,minutes=elt.minute,seconds=elt.second)for elt in infos["duration"]]
         infos["duration"]=[int(elt.total_seconds()) for elt in infos["duration"]]
     if "aired" in infos.keys():
-        infos["aired"]=[ elt["start"].year if type(infos["aired"])==dict and type(elt["start"])!=int 
-                        else elt["start"] if type(infos["aired"])==dict 
-                        else infos["aired"][0] for elt in infos["aired"]]
+        infos["aired"]=[elt["start"].year if "start" in elt.keys() and type(elt["start"])==type(datetime.datetime.today())
+                        else elt["start"] for elt in infos["aired"]]
     if "related_anime" in infos.keys():
         for i in range(len(infos["related_anime"])):
             related_anime=[]
@@ -528,6 +527,7 @@ def anime_recommandation(titles,collection,options,champs=["genres","duration","
     
     # Renvoi de la meilleur sélection
     len_selection=pd.Series(selection).apply(lambda s: len(s) if len(s)!=0 else 10**30)
+   # print(len_selection)
     best_selection=selection[len_selection.argmin()]
     request=make_request(options=options,
     titles=clean_selection(best_selection,collection,clean_yet))
