@@ -1,131 +1,48 @@
-# Import required libraries
-import pickle
-import copy
-import pathlib
-import urllib.request
+# -*- coding: Utf-8 -*-
+# 
+# Imports
+#
 import dash
-import math
-import datetime as dt
-import pandas as pd
-from dash.dependencies import Input, Output, State, ClientsideFunction
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_table
+import pymongo
+import datetime
+from datetime import time, MAXYEAR, timedelta
+from dash.dependencies import Input, Output, State
+from controls import init_components, make_request, select_anime, print_infos, anime_recommandation2
 
-# Multi-dropdown options
-from controls import COUNTIES, WELL_STATUSES, WELL_TYPES, WELL_COLORS
+#
+# Data
+#
 
+client = pymongo.MongoClient()
+database = client.anime
+collection = database.myanimelist
+options=init_components(collection)
 
-# get relative data folder
-PATH = pathlib.Path(__file__).parent
-DATA_PATH = PATH.joinpath("data").resolve()
-
-app = dash.Dash(
-    __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}]
-)
-server = app.server
-
-# Create controls
-county_options = [
-    {"label": str(COUNTIES[county]), "value": str(county)} for county in COUNTIES
-]
-
-well_status_options = [
-    {"label": str(WELL_STATUSES[well_status]), "value": str(well_status)}
-    for well_status in WELL_STATUSES
-]
-
-well_type_options = [
-    {"label": str(WELL_TYPES[well_type]), "value": str(well_type)}
-    for well_type in WELL_TYPES
-]
-
-
-# Download pickle file
-urllib.request.urlretrieve(
-    "https://raw.githubusercontent.com/plotly/datasets/master/dash-sample-apps/dash-oil-and-gas/data/points.pkl",
-    DATA_PATH.joinpath("points.pkl"),
-)
-points = pickle.load(open(DATA_PATH.joinpath("points.pkl"), "rb"))
-
-
-# Load data
-df = pd.read_csv(
-    "https://github.com/plotly/datasets/raw/master/dash-sample-apps/dash-oil-and-gas/data/wellspublic.csv",
-    low_memory=False,
-)
-df["Date_Well_Completed"] = pd.to_datetime(df["Date_Well_Completed"])
-df = df[df["Date_Well_Completed"] > dt.datetime(1960, 1, 1)]
-
-trim = df[["API_WellNo", "Well_Type", "Well_Name"]]
-trim.index = trim["API_WellNo"]
-dataset = trim.to_dict(orient="index")
-
-
-# Create global chart template
-mapbox_access_token = "pk.eyJ1IjoicGxvdGx5bWFwYm94IiwiYSI6ImNrOWJqb2F4djBnMjEzbG50amg0dnJieG4ifQ.Zme1-Uzoi75IaFbieBDl3A"
-
-layout = dict(
-    autosize=True,
-    automargin=True,
-    margin=dict(l=30, r=30, b=20, t=40),
-    hovermode="closest",
-    plot_bgcolor="#F9F9F9",
-    paper_bgcolor="#F9F9F9",
-    legend=dict(font=dict(size=10), orientation="h"),
-    title="Satellite Overview",
-    mapbox=dict(
-        accesstoken=mapbox_access_token,
-        style="light",
-        center=dict(lon=-78.05, lat=42.54),
-        zoom=7,
-    ),
-)
-
-# Create app layout
-app.layout = html.Div(
-    [
-        dcc.Store(id="aggregate_data"),
-        # empty Div to trigger javascript file for graph resizing
-        html.Div(id="output-clientside"),
-        html.Div(
-            [
-                html.Div(
-                    [
-                        html.Img(
+#
+# Structure
+#
+def build_banner():
+    return html.Div(
+            [html.Div([html.Img(
                             src=app.get_asset_url("dash-logo.png"),
                             id="plotly-image",
-                            style={
-                                "height": "60px",
-                                "width": "auto",
-                                "margin-bottom": "25px",
-                            },
-                        )
-                    ],
-                    className="one-third column",
+                            style={"height": "60px",
+                                   "width": "auto",
+                                   "margin-bottom": "25px"}
+                        )], className="one-third column",
                 ),
-                html.Div(
-                    [
-                        html.Div(
-                            [
-                                html.H3(
-                                    "New York Oil and Gas",
-                                    style={"margin-bottom": "0px"},
-                                ),
-                                html.H5(
-                                    "Production Overview", style={"margin-top": "0px"}
-                                ),
-                            ]
-                        )
-                    ],
-                    className="one-half column",
-                    id="title",
-                ),
-                html.Div(
-                    [
-                        html.A(
-                            html.Button("Learn More", id="learn-more-button"),
-                            href="https://plot.ly/dash/pricing/",
-                        )
+                html.Div([html.Div([html.H3("ANIMES RECOMMANDATION PROJECT",
+                                    style={"margin-bottom": "0px"}),
+                          html.H5("Advance search & Recommandation by other titles", 
+                                style={"margin-top": "0px"})
+                        ])
+            ], className="one-half column", id="title"),
+
+            html.Div([html.A(html.Button("Learn More", id="learn-more-button"),
+                            href="https://plot.ly/dash/pricing/")
                     ],
                     className="one-third column",
                     id="button",
@@ -134,587 +51,312 @@ app.layout = html.Div(
             id="header",
             className="row flex-display",
             style={"margin-bottom": "25px"},
-        ),
-        html.Div(
-            [
-                html.Div(
-                    [
-                        html.P(
-                            "Filter by construction date (or select range in histogram):",
-                            className="control_label",
-                        ),
-                        dcc.RangeSlider(
-                            id="year_slider",
-                            min=1960,
-                            max=2017,
-                            value=[1990, 2010],
-                            className="dcc_control",
-                        ),
-                        html.P("Filter by well status:", className="control_label"),
-                        dcc.RadioItems(
-                            id="well_status_selector",
-                            options=[
-                                {"label": "All ", "value": "all"},
-                                {"label": "Active only ", "value": "active"},
-                                {"label": "Customize ", "value": "custom"},
-                            ],
-                            value="active",
-                            labelStyle={"display": "inline-block"},
-                            className="dcc_control",
-                        ),
-                        dcc.Dropdown(
-                            id="well_statuses",
-                            options=well_status_options,
-                            multi=True,
-                            value=list(WELL_STATUSES.keys()),
-                            className="dcc_control",
-                        ),
-                        dcc.Checklist(
-                            id="lock_selector",
-                            options=[{"label": "Lock camera", "value": "locked"}],
-                            className="dcc_control",
-                            value=[],
-                        ),
-                        html.P("Filter by well type:", className="control_label"),
-                        dcc.RadioItems(
-                            id="well_type_selector",
-                            options=[
-                                {"label": "All ", "value": "all"},
-                                {"label": "Productive only ", "value": "productive"},
-                                {"label": "Customize ", "value": "custom"},
-                            ],
-                            value="productive",
-                            labelStyle={"display": "inline-block"},
-                            className="dcc_control",
-                        ),
-                        dcc.Dropdown(
-                            id="well_types",
-                            options=well_type_options,
-                            multi=True,
-                            value=list(WELL_TYPES.keys()),
-                            className="dcc_control",
-                        ),
-                    ],
-                    className="pretty_container four columns",
-                    id="cross-filter-options",
-                ),
-                html.Div(
-                    [
-                        html.Div(
-                            [
-                                html.Div(
-                                    [html.H6(id="well_text"), html.P("No. of Wells")],
-                                    id="wells",
-                                    className="mini_container",
-                                ),
-                                html.Div(
-                                    [html.H6(id="gasText"), html.P("Gas")],
-                                    id="gas",
-                                    className="mini_container",
-                                ),
-                                html.Div(
-                                    [html.H6(id="oilText"), html.P("Oil")],
-                                    id="oil",
-                                    className="mini_container",
-                                ),
-                                html.Div(
-                                    [html.H6(id="waterText"), html.P("Water")],
-                                    id="water",
-                                    className="mini_container",
-                                ),
-                            ],
-                            id="info-container",
-                            className="row container-display",
-                        ),
-                        html.Div(
-                            [dcc.Graph(id="count_graph")],
-                            id="countGraphContainer",
-                            className="pretty_container",
-                        ),
-                    ],
-                    id="right-column",
-                    className="eight columns",
-                ),
-            ],
-            className="row flex-display",
-        ),
-        html.Div(
-            [
-                html.Div(
-                    [dcc.Graph(id="main_graph")],
-                    className="pretty_container seven columns",
-                ),
-                html.Div(
-                    [dcc.Graph(id="individual_graph")],
-                    className="pretty_container five columns",
-                ),
-            ],
-            className="row flex-display",
-        ),
-        html.Div(
-            [
-                html.Div(
-                    [dcc.Graph(id="pie_graph")],
-                    className="pretty_container seven columns",
-                ),
-                html.Div(
-                    [dcc.Graph(id="aggregate_graph")],
-                    className="pretty_container five columns",
-                ),
-            ],
-            className="row flex-display",
-        ),
-    ],
-    id="mainContainer",
-    style={"display": "flex", "flex-direction": "column"},
-)
+        )
 
-
-# Helper functions
-def human_format(num):
-    if num == 0:
-        return "0"
-
-    magnitude = int(math.log(num, 1000))
-    mantissa = str(int(num / (1000 ** magnitude)))
-    return mantissa + ["", "K", "M", "G", "T", "P"][magnitude]
-
-
-def filter_dataframe(df, well_statuses, well_types, year_slider):
-    dff = df[
-        df["Well_Status"].isin(well_statuses)
-        & df["Well_Type"].isin(well_types)
-        & (df["Date_Well_Completed"] > dt.datetime(year_slider[0], 1, 1))
-        & (df["Date_Well_Completed"] < dt.datetime(year_slider[1], 1, 1))
-    ]
-    return dff
-
-
-def produce_individual(api_well_num):
-    try:
-        points[api_well_num]
-    except:
-        return None, None, None, None
-
-    index = list(
-        range(min(points[api_well_num].keys()), max(points[api_well_num].keys()) + 1)
+def build_tabs():
+    return html.Div(
+        id="tabs",
+        className="tabs",
+        children=[
+            dcc.Tabs(
+                id="app-tabs",
+                value="tab2",
+                className="custom-tabs",
+                children=[
+                    dcc.Tab(
+                        id="Ad-search-tab",
+                        label="Advance search",
+                        value="tab1",
+                        className="custom-tab",
+                        selected_className="custom-tab--selected",
+                    ),
+                    dcc.Tab(
+                        id="Reco-tab",
+                        label="Recommandation",
+                        value="tab2",
+                        className="custom-tab",
+                        selected_className="custom-tab--selected",
+                    ),
+                ],
+            )
+        ],
     )
-    gas = []
-    oil = []
-    water = []
 
-    for year in index:
-        try:
-            gas.append(points[api_well_num][year]["Gas Produced, MCF"])
-        except:
-            gas.append(0)
-        try:
-            oil.append(points[api_well_num][year]["Oil Produced, bbl"])
-        except:
-            oil.append(0)
-        try:
-            water.append(points[api_well_num][year]["Water Produced, bbl"])
-        except:
-            water.append(0)
-
-    return index, gas, oil, water
-
-
-def produce_aggregate(selected, year_slider):
-
-    index = list(range(max(year_slider[0], 1985), 2016))
-    gas = []
-    oil = []
-    water = []
-
-    for year in index:
-        count_gas = 0
-        count_oil = 0
-        count_water = 0
-        for api_well_num in selected:
-            try:
-                count_gas += points[api_well_num][year]["Gas Produced, MCF"]
-            except:
-                pass
-            try:
-                count_oil += points[api_well_num][year]["Oil Produced, bbl"]
-            except:
-                pass
-            try:
-                count_water += points[api_well_num][year]["Water Produced, bbl"]
-            except:
-                pass
-        gas.append(count_gas)
-        oil.append(count_oil)
-        water.append(count_water)
-
-    return index, gas, oil, water
-
-
-# Create callbacks
-app.clientside_callback(
-    ClientsideFunction(namespace="clientside", function_name="resize"),
-    Output("output-clientside", "children"),
-    [Input("count_graph", "figure")],
-)
-
-
-@app.callback(
-    Output("aggregate_data", "data"),
-    [
-        Input("well_statuses", "value"),
-        Input("well_types", "value"),
-        Input("year_slider", "value"),
-    ],
-)
-def update_production_text(well_statuses, well_types, year_slider):
-
-    dff = filter_dataframe(df, well_statuses, well_types, year_slider)
-    selected = dff["API_WellNo"].values
-    index, gas, oil, water = produce_aggregate(selected, year_slider)
-    return [human_format(sum(gas)), human_format(sum(oil)), human_format(sum(water))]
-
-
-# Radio -> multi
-@app.callback(
-    Output("well_statuses", "value"), [Input("well_status_selector", "value")]
-)
-def display_status(selector):
-    if selector == "all":
-        return list(WELL_STATUSES.keys())
-    elif selector == "active":
-        return ["AC"]
-    return []
-
-
-# Radio -> multi
-@app.callback(Output("well_types", "value"), [Input("well_type_selector", "value")])
-def display_type(selector):
-    if selector == "all":
-        return list(WELL_TYPES.keys())
-    elif selector == "productive":
-        return ["GD", "GE", "GW", "IG", "IW", "OD", "OE", "OW"]
-    return []
-
-
-# Slider -> count graph
-@app.callback(Output("year_slider", "value"), [Input("count_graph", "selectedData")])
-def update_year_slider(count_graph_selected):
-
-    if count_graph_selected is None:
-        return [1990, 2010]
-
-    nums = [int(point["pointNumber"]) for point in count_graph_selected["points"]]
-    return [min(nums) + 1960, max(nums) + 1961]
-
-
-# Selectors -> well text
-@app.callback(
-    Output("well_text", "children"),
-    [
-        Input("well_statuses", "value"),
-        Input("well_types", "value"),
-        Input("year_slider", "value"),
-    ],
-)
-def update_well_text(well_statuses, well_types, year_slider):
-
-    dff = filter_dataframe(df, well_statuses, well_types, year_slider)
-    return dff.shape[0]
-
-
-@app.callback(
-    [
-        Output("gasText", "children"),
-        Output("oilText", "children"),
-        Output("waterText", "children"),
-    ],
-    [Input("aggregate_data", "data")],
-)
-def update_text(data):
-    return data[0] + " mcf", data[1] + " bbl", data[2] + " bbl"
-
-
-# Selectors -> main graph
-@app.callback(
-    Output("main_graph", "figure"),
-    [
-        Input("well_statuses", "value"),
-        Input("well_types", "value"),
-        Input("year_slider", "value"),
-    ],
-    [State("lock_selector", "value"), State("main_graph", "relayoutData")],
-)
-def make_main_figure(
-    well_statuses, well_types, year_slider, selector, main_graph_layout
-):
-
-    dff = filter_dataframe(df, well_statuses, well_types, year_slider)
-
-    traces = []
-    for well_type, dfff in dff.groupby("Well_Type"):
-        trace = dict(
-            type="scattermapbox",
-            lon=dfff["Surface_Longitude"],
-            lat=dfff["Surface_latitude"],
-            text=dfff["Well_Name"],
-            customdata=dfff["API_WellNo"],
-            name=WELL_TYPES[well_type],
-            marker=dict(size=4, opacity=0.6),
-        )
-        traces.append(trace)
-
-    # relayoutData is None by default, and {'autosize': True} without relayout action
-    if main_graph_layout is not None and selector is not None and "locked" in selector:
-        if "mapbox.center" in main_graph_layout.keys():
-            lon = float(main_graph_layout["mapbox.center"]["lon"])
-            lat = float(main_graph_layout["mapbox.center"]["lat"])
-            zoom = float(main_graph_layout["mapbox.zoom"])
-            layout["mapbox"]["center"]["lon"] = lon
-            layout["mapbox"]["center"]["lat"] = lat
-            layout["mapbox"]["zoom"] = zoom
-
-    figure = dict(data=traces, layout=layout)
-    return figure
-
-
-# Main graph -> individual graph
-@app.callback(Output("individual_graph", "figure"), [Input("main_graph", "hoverData")])
-def make_individual_figure(main_graph_hover):
-
-    layout_individual = copy.deepcopy(layout)
-
-    if main_graph_hover is None:
-        main_graph_hover = {
-            "points": [
-                {"curveNumber": 4, "pointNumber": 569, "customdata": 31101173130000}
-            ]
-        }
-
-    chosen = [point["customdata"] for point in main_graph_hover["points"]]
-    index, gas, oil, water = produce_individual(chosen[0])
-
-    if index is None:
-        annotation = dict(
-            text="No data available",
-            x=0.5,
-            y=0.5,
-            align="center",
-            showarrow=False,
-            xref="paper",
-            yref="paper",
-        )
-        layout_individual["annotations"] = [annotation]
-        data = []
-    else:
-        data = [
-            dict(
-                type="scatter",
-                mode="lines+markers",
-                name="Gas Produced (mcf)",
-                x=index,
-                y=gas,
-                line=dict(shape="spline", smoothing=2, width=1, color="#fac1b7"),
-                marker=dict(symbol="diamond-open"),
-            ),
-            dict(
-                type="scatter",
-                mode="lines+markers",
-                name="Oil Produced (bbl)",
-                x=index,
-                y=oil,
-                line=dict(shape="spline", smoothing=2, width=1, color="#a9bb95"),
-                marker=dict(symbol="diamond-open"),
-            ),
-            dict(
-                type="scatter",
-                mode="lines+markers",
-                name="Water Produced (bbl)",
-                x=index,
-                y=water,
-                line=dict(shape="spline", smoothing=2, width=1, color="#92d8d8"),
-                marker=dict(symbol="diamond-open"),
-            ),
+def build_advance_search():
+    return [html.Div([
+                html.Div([
+                    html.Div([
+                        html.Div([
+                        html.P("Filter by start year:", className="control_label"),
+                        dcc.Checklist(id='year_check',
+                                    options=[{'label':"Include N\\A",'value':"Include N\\A"}],
+                                    value=[]
+                        )]),
+                        dcc.RangeSlider(id='year_slider',
+                                min=0,
+                                max=len(options["year_val"])-1,
+                                step=None,
+                                marks=dict([(i,str(options["year_val"][i])) 
+                                        for i in range(len(options["year_val"]))]),
+                                value=[2, len(options["year_val"])-1],
+                                className="dcc_control",
+                        ),
+                        html.P("Filter by status:", className="control_label"),
+                        dcc.Dropdown(id='status_drop',
+                                options=[{'label':status,'value':status} 
+                                            for status in options["status_val"]+["All status"]],
+                                value=["All status"],
+                                multi=True
+                        ),
+                        html.P("Filter by rating:", className="control_label"),
+                        dcc.Dropdown(id='rating_drop',
+                            options=[{'label':rating,'value':rating} for rating in options["rating_val"]+["All ratings"]],
+                            value=["All ratings"],
+                            multi=True
+                        ),
+                        html.P("Filter by type:", className="control_label"),
+                        dcc.Dropdown(id='type_drop',
+                                options=[{'label':Type,'value':Type} for Type in options["Type_val"]+["All types"]],
+                                value=["All types"],
+                                multi=True
+                        ),
+                        html.P("Filter by score:", className="control_label"),
+                        dcc.Checklist(id='score_check',
+                                    options=[{'label':"Include N\\A",'value':"Include N\\A"}],
+                                    value=[]
+                        ),
+                        dcc.RangeSlider(id='score_slider',
+                                min=0,
+                                max=10,
+                                step=1,
+                                marks=dict([(i,str(i)) for i in range(11)]),
+                                value=[5, 10]
+                        ), 
+                        html.P("Filter by duration:", className="control_label"),
+                        dcc.Checklist(id='duration_check',
+                                    options=[{'label':"Include N\\A",'value':"Include N\\A"}],
+                                    value=[]
+                        ),
+                        dcc.RangeSlider(id='duration_slider',
+                                min=0,
+                                max=len(options["duration_val"])-1,
+                                step=None,
+                                marks=dict([(v,l) for v,l in zip([i for i in range(len(options["duration_val"]))],options["duration_label"])]),
+                                value=[0, 4]
+                        ),
+                        html.P("Filter by episode number:", className="control_label"),
+                        dcc.Checklist(id='episodes_check',
+                                    options=[{'label':"Include N\\A",'value':"Include N\\A"}],
+                                    value=[]
+                        ),
+                        dcc.RangeSlider(id='episodes_slider',
+                                min=0,
+                                max=len(options["episodes_val"])-1,
+                                step=None,
+                                marks=dict([(i,str(options["episodes_val"][i])) for i in range(len(options["episodes_val"]))]),
+                                value=[0, 4]
+                        ),
+                    ], className="pretty_container four columns", id="cross-filter-options"),
+                        html.Div([
+                            html.Div([
+                                html.P("Filter by producers:", className="control_label"),
+                                dcc.RadioItems(id='producers_radio',
+                                        options=[{'label': v, 'value': v} for v in options["radio_producers"]],
+                                        value='All producers',
+                                        labelStyle={'display': 'inline-block'}),
+                                dcc.Dropdown(id='producers_drop',
+                                        options=[{'label':prod,'value':prod} for prod in options["producers_val"]],
+                                        value=[],
+                                        multi=True
+                                    )], className="mini_container",
+                            ),
+                            html.Div([ 
+                                html.P("Filter by genres:", className="control_label"),       
+                                dcc.RadioItems(id='genres_radio',
+                                        options=[{'label': v, 'value': v} for v in options["radio_genres"]],
+                                        value='All genres',
+                                        labelStyle={'display': 'inline-block'}
+                                ),
+                                dcc.Checklist(id='genres_check',
+                                        options=[{'label':v,'value':v} for v in options["genres_val"]],
+                                        labelStyle={'display': 'inline-block'},
+                                        value=[]
+                                )],className="pretty_container",
+                            ),
+                            html.Div([
+                                html.Div([html.Button("Submit",id="submit-button")],className='mini_container'),
+                                html.Div([html.Button("Next",id="next-button")],className='mini_container'),
+                                html.Div([html.Button("Back",id="back-button")],className='mini_container')
+                            ],className="row container-display",style={"margin-left":"auto","margin-right":"auto"})
+                        ],id="right-column",className="eight columns")
+                    ],className="row flex-display"),
+                html.Div([
+                        html.Div([dcc.Markdown(id="anime_infos")],className="pretty_container six columns"),
+                        html.Div([
+                            dcc.Markdown(id="result_idx",
+                                        style={"margin-left":"auto","margin-right":"auto","text-align":"center"}),
+                            html.Img(id="anime_image",
+                                style={"display":"block",
+                                        "margin-bottom":"auto", "margin-top":"auto",
+                                        "margin-left": "auto", "margin-right":"auto"}),
+                            dcc.Markdown("***\n***Related anime: ***",id="table_name"),
+                            dash_table.DataTable(id='related_anime_table',
+                                                style_cell={'whiteSpace': 'normal','height': 'auto'},
+                                                columns=[{"name": i, "id": i} for i in ["Link","Titles"]])
+                            ],className="pretty_container five columns")
+                    ], className="inline-block")
+            ])   
         ]
-        layout_individual["title"] = dataset[chosen[0]]["Well_Name"]
 
-    figure = dict(data=data, layout=layout_individual)
-    return figure
-
-
-# Selectors, main graph -> aggregate graph
-@app.callback(
-    Output("aggregate_graph", "figure"),
-    [
-        Input("well_statuses", "value"),
-        Input("well_types", "value"),
-        Input("year_slider", "value"),
-        Input("main_graph", "hoverData"),
-    ],
-)
-def make_aggregate_figure(well_statuses, well_types, year_slider, main_graph_hover):
-
-    layout_aggregate = copy.deepcopy(layout)
-
-    if main_graph_hover is None:
-        main_graph_hover = {
-            "points": [
-                {"curveNumber": 4, "pointNumber": 569, "customdata": 31101173130000}
+def build_recommandation():
+    return [html.Div([
+                html.Div([
+                    html.P("Enter the titles of animes you enjoyed: ", className="control_label"),
+                    html.Div([
+                        html.Div([dcc.Dropdown(id='titles_search_bar', options= options["titles"], value=[], multi=True)
+                            ],className='ten columns'),
+                        html.Button("Submit",id="submit-button-reco")],className='row display'),
+                    html.Div([html.P("Max. number of recommandations:",className="control_label"),
+                        dcc.Input(id="max-result-input", placeholder='Enter a value...',type='number',value=100,min=1),
+                        dcc.Checklist(id="print-all-check", options=[{'label':"See all results",'value':"See all results"}],value=[]),
+                        ],className='row flex-display'),
+                    html.Button("Back",id="back-button-reco"),
+                    html.Button("Next",id="next-button-reco"),
+                    ],className='pretty_container'),
+                html.Div([
+                    html.Div([dcc.Markdown(id="anime_infos_reco")],className="pretty_container six columns"),
+                    html.Div([
+                        dcc.Markdown(id="result_idx_reco",
+                                    style={"margin-left":"auto","margin-right":"auto","text-align":"center"}),
+                        html.Img(id="anime_image_reco",
+                            style={"display":"block",
+                                    "margin-bottom":"auto", "margin-top":"auto",
+                                    "margin-left": "auto", "margin-right":"auto"}),
+                        dcc.Markdown("***\n***Related anime: ***",id="table_name_reco"),
+                        dash_table.DataTable(id='related_anime_table_reco',
+                                style_cell={'whiteSpace': 'normal','height': 'auto'},
+                                columns=[{"name": i, "id": i} for i in ["Link","Titles"]])
+                        ],className="pretty_container five columns")
+                    ], className="inline-block")
+                ])
             ]
-        }
 
-    chosen = [point["customdata"] for point in main_graph_hover["points"]]
-    well_type = dataset[chosen[0]]["Well_Type"]
-    dff = filter_dataframe(df, well_statuses, well_types, year_slider)
+#
+# Main
+#
 
-    selected = dff[dff["Well_Type"] == well_type]["API_WellNo"].values
-    index, gas, oil, water = produce_aggregate(selected, year_slider)
+if __name__ == '__main__':
 
-    data = [
-        dict(
-            type="scatter",
-            mode="lines",
-            name="Gas Produced (mcf)",
-            x=index,
-            y=gas,
-            line=dict(shape="spline", smoothing="2", color="#F9ADA0"),
-        ),
-        dict(
-            type="scatter",
-            mode="lines",
-            name="Oil Produced (bbl)",
-            x=index,
-            y=oil,
-            line=dict(shape="spline", smoothing="2", color="#849E68"),
-        ),
-        dict(
-            type="scatter",
-            mode="lines",
-            name="Water Produced (bbl)",
-            x=index,
-            y=water,
-            line=dict(shape="spline", smoothing="2", color="#59C3C3"),
-        ),
-    ]
-    layout_aggregate["title"] = "Aggregate: " + WELL_TYPES[well_type]
+    app = dash.Dash(__name__,suppress_callback_exceptions=True) 
 
-    figure = dict(data=data, layout=layout_aggregate)
-    return figure
-
-
-# Selectors, main graph -> pie graph
-@app.callback(
-    Output("pie_graph", "figure"),
-    [
-        Input("well_statuses", "value"),
-        Input("well_types", "value"),
-        Input("year_slider", "value"),
-    ],
-)
-def make_pie_figure(well_statuses, well_types, year_slider):
-
-    layout_pie = copy.deepcopy(layout)
-
-    dff = filter_dataframe(df, well_statuses, well_types, year_slider)
-
-    selected = dff["API_WellNo"].values
-    index, gas, oil, water = produce_aggregate(selected, year_slider)
-
-    aggregate = dff.groupby(["Well_Type"]).count()
-
-    data = [
-        dict(
-            type="pie",
-            labels=["Gas", "Oil", "Water"],
-            values=[sum(gas), sum(oil), sum(water)],
-            name="Production Breakdown",
-            text=[
-                "Total Gas Produced (mcf)",
-                "Total Oil Produced (bbl)",
-                "Total Water Produced (bbl)",
+    app.layout=html.Div(children=[
+        build_banner(),
+        html.Div(
+            id="app-container",
+            children=[
+                build_tabs(),
+                # Main app
+                html.Div(id="app-content"),
             ],
-            hoverinfo="text+value+percent",
-            textinfo="label+percent+name",
-            hole=0.5,
-            marker=dict(colors=["#fac1b7", "#a9bb95", "#92d8d8"]),
-            domain={"x": [0, 0.45], "y": [0.2, 0.8]},
         ),
-        dict(
-            type="pie",
-            labels=[WELL_TYPES[i] for i in aggregate.index],
-            values=aggregate["API_WellNo"],
-            name="Well Type Breakdown",
-            hoverinfo="label+text+value+percent",
-            textinfo="label+percent+name",
-            hole=0.5,
-            marker=dict(colors=[WELL_COLORS[i] for i in aggregate.index]),
-            domain={"x": [0.55, 1], "y": [0.2, 0.8]},
-        ),
-    ]
-    layout_pie["title"] = "Production Summary: {} to {}".format(
-        year_slider[0], year_slider[1]
+    ])
+
+    @app.callback(
+        [Output("app-content", "children")],
+        [Input("app-tabs", "value")],
     )
-    layout_pie["font"] = dict(color="#777777")
-    layout_pie["legend"] = dict(
-        font=dict(color="#CCCCCC", size="10"), orientation="h", bgcolor="rgba(0,0,0,0)"
+    def render_tab_content(tab_switch):
+        global selection
+        selection=[]
+        global current_result_idx
+        current_result_idx=0
+        if tab_switch == "tab1":
+            return build_advance_search()
+        elif tab_switch == "tab2":
+            return build_recommandation()
+
+    @app.callback(
+        [Output("anime_infos","children"),
+        Output("anime_image","src"),
+        Output("result_idx","children"),
+        Output("related_anime_table","data")],
+        [Input("submit-button","n_clicks"),
+        Input("back-button","n_clicks"),
+        Input("next-button","n_clicks"),
+        Input('type_drop', 'value'),
+        Input('rating_drop', 'value'),
+        Input('status_drop', 'value'),
+        Input('score_slider', 'value'),
+        Input('score_check','value'),
+        Input('duration_slider', 'value'),
+        Input('duration_check','value'),
+        Input('episodes_slider', 'value'),
+        Input('episodes_check','value'),
+        Input('year_slider', 'value'),
+        Input('year_check', 'value'),
+        Input('genres_radio', 'value'),
+        Input('genres_check', 'value'),
+        Input('producers_radio', 'value'),
+        Input('producers_drop', 'value')]
     )
+    def print_advance_search_result(submit,back,next,
+        Type,rating,status,
+        score_s,score_c,duration_s,
+        duration_c,episodes_s,episodes_c,
+        year_s,year_c,genres_r,
+        genres_c,producers_r,producers_d):
+        changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+        if 'submit-button' in changed_id:
+            global current_result_idx
+            current_result_idx=0
+            global selection
+            request=make_request(Type=Type,rating=rating,status=status,
+                                    score={"check":score_c,"slider":score_s},
+                                    duration={"check":duration_c,"slider":duration_s},
+                                    episodes={"check":episodes_c,"slider":episodes_s},
+                                    year={"check":year_c,"slider":year_s},
+                                    genres={"radio":genres_r,"check":genres_c},
+                                    producers={"radio":producers_r,"drop":producers_d},
+                                    options=options)
+            selection=select_anime(request,collection)
+        elif 'next-button' in changed_id:
+            if len(selection)>0 and current_result_idx!=len(selection)-1:
+                current_result_idx+=1
+        elif 'back-button' in changed_id:
+            if len(selection)>0 and current_result_idx!=0:
+                current_result_idx-=1
+        return print_infos(selection,current_result_idx)
+    
+    @app.callback(
+        [Output("anime_infos_reco","children"),
+        Output("anime_image_reco","src"),
+        Output("result_idx_reco","children"),
+        Output("related_anime_table_reco","data"),],
+        [Input("submit-button-reco","n_clicks"),
+        Input("back-button-reco","n_clicks"),
+        Input("next-button-reco","n_clicks"),
+        Input('titles_search_bar', 'value'),
+        Input('print-all-check','value'),
+        Input('max-result-input','value')]
+    )
+    def print_recommandation_result(submit,back,next,titles,allResult,max_result):
+        changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+        if 'submit-button-reco' in changed_id and len(titles)>0:
+            global current_result_idx
+            current_result_idx=0
+            global selection
+            if allResult!=["See all results"]:
+                selection=anime_recommandation2(titles,collection,options,max_result=max_result)
+            else:
+                selection=anime_recommandation2(titles,collection,options,max_result=10**50)
+        elif 'next-button-reco' in changed_id and len(titles)>0:
+            if len(selection)>0 and current_result_idx!=len(selection)-1:
+                current_result_idx+=1
+        elif 'back-button-reco' in changed_id and len(titles)>0:
+            if len(selection)>0 and current_result_idx!=0:
+                current_result_idx-=1
 
-    figure = dict(data=data, layout=layout_pie)
-    return figure
-
-
-# Selectors -> count graph
-@app.callback(
-    Output("count_graph", "figure"),
-    [
-        Input("well_statuses", "value"),
-        Input("well_types", "value"),
-        Input("year_slider", "value"),
-    ],
-)
-def make_count_figure(well_statuses, well_types, year_slider):
-
-    layout_count = copy.deepcopy(layout)
-
-    dff = filter_dataframe(df, well_statuses, well_types, [1960, 2017])
-    g = dff[["API_WellNo", "Date_Well_Completed"]]
-    g.index = g["Date_Well_Completed"]
-    g = g.resample("A").count()
-
-    colors = []
-    for i in range(1960, 2018):
-        if i >= int(year_slider[0]) and i < int(year_slider[1]):
-            colors.append("rgb(123, 199, 255)")
-        else:
-            colors.append("rgba(123, 199, 255, 0.2)")
-
-    data = [
-        dict(
-            type="scatter",
-            mode="markers",
-            x=g.index,
-            y=g["API_WellNo"] / 2,
-            name="All Wells",
-            opacity=0,
-            hoverinfo="skip",
-        ),
-        dict(
-            type="bar",
-            x=g.index,
-            y=g["API_WellNo"],
-            name="All Wells",
-            marker=dict(color=colors),
-        ),
-    ]
-
-    layout_count["title"] = "Completed Wells/Year"
-    layout_count["dragmode"] = "select"
-    layout_count["showlegend"] = False
-    layout_count["autosize"] = True
-
-    figure = dict(data=data, layout=layout_count)
-    return figure
-
+        return print_infos(selection,current_result_idx)
 
 # Main
 if __name__ == "__main__":
