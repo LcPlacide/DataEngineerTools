@@ -10,7 +10,7 @@ import pymongo
 import datetime
 from datetime import time, MAXYEAR, timedelta
 from dash.dependencies import Input, Output, State
-from controls import init_components, make_request, select_anime, print_infos, anime_recommandation2,popup
+from controls import init_components, make_request, select_anime, print_infos, anime_Recommendation,popup
 
 #
 # Data
@@ -22,9 +22,16 @@ collection = database.myanimelist
 options=init_components(collection)
 
 #
-# Structure
+# Structure de l'app
 #
 def build_banner():
+    """
+    Création de la bannière commune
+    aux deux onglets de l'app
+
+    Returns:
+        div html définissant l'en-tête de l'app
+    """
     return html.Div(
             [html.Div([html.Img(
                             src=app.get_asset_url("dash-logo.png"),
@@ -34,9 +41,9 @@ def build_banner():
                                    "margin-bottom": "25px"}
                         )], className="one-third column",
                 ),
-                html.Div([html.Div([html.H3("ANIMES RECOMMANDATION PROJECT",
+                html.Div([html.Div([html.H3("ANIMES Recommendation PROJECT",
                                     style={"margin-bottom": "0px"}),
-                          html.H5("Advance search & Recommandation by other titles", 
+                          html.H5("Advance search & Recommendation by other titles", 
                                 style={"margin-top": "0px"})
                         ])
             ], className="one-half column", id="title"),
@@ -57,6 +64,13 @@ def build_banner():
         )
 
 def build_tabs():
+    """
+    Création des deux onglets
+    "Advance search" et "Recommendation
+
+    Returns:
+        div html définissant les deux onglets
+    """
     return html.Div(
         id="tabs",
         className="tabs",
@@ -75,7 +89,7 @@ def build_tabs():
                     ),
                     dcc.Tab(
                         id="Reco-tab",
-                        label="Recommandation",
+                        label="Recommendation",
                         value="tab2",
                         className="custom-tab",
                         selected_className="custom-tab--selected",
@@ -86,6 +100,12 @@ def build_tabs():
     )
 
 def build_advance_search():
+    """
+    Construction de l'onglet "Advance search"
+
+    Returns:
+        liste décrivant la struture de l'onglet
+    """
     return [html.Div([
                 html.Div([
                     html.Div([
@@ -105,24 +125,27 @@ def build_advance_search():
                                 className="dcc_control",
                         ),
                         html.P("Filter by status:", className="control_label"),
-                        dcc.Dropdown(id='status_drop',
-                                options=[{'label':status,'value':status} 
-                                            for status in options["status_val"]+["All status"]],
-                                value=["All status"],
-                                multi=True
-                        ),
+                        html.Div([
+                            dcc.Dropdown(id='status_drop',
+                                    options=[{'label':status,'value':status} 
+                                                for status in options["status_val"]+["All status"]],
+                                    value="All status",
+                                    multi=False
+                            )],id="status_div"),
                         html.P("Filter by rating:", className="control_label"),
-                        dcc.Dropdown(id='rating_drop',
-                            options=[{'label':rating,'value':rating} for rating in options["rating_val"]+["All ratings"]],
-                            value=["All ratings"],
-                            multi=True
-                        ),
+                        html.Div([                      
+                            dcc.Dropdown(id='rating_drop',
+                                options=[{'label':rating,'value':rating} for rating in options["rating_val"]+["All ratings"]],
+                                value="All ratings",
+                                multi=False
+                        )],id="rating_div"),
                         html.P("Filter by type:", className="control_label"),
-                        dcc.Dropdown(id='type_drop',
-                                options=[{'label':Type,'value':Type} for Type in options["Type_val"]+["All types"]],
-                                value=["All types"],
-                                multi=True
-                        ),
+                        html.Div([
+                            dcc.Dropdown(id='type_drop',
+                                    options=[{'label':Type,'value':Type} for Type in options["Type_val"]+["All types"]],
+                                    value="All types",
+                                    multi=False
+                        )],id='type_div'),
                         html.P("Filter by score:", className="control_label"),
                         dcc.Checklist(id='score_check',
                                     options=[{'label':"Include N\\A",'value':"Include N\\A"}],
@@ -167,11 +190,13 @@ def build_advance_search():
                                         options=[{'label': v, 'value': v} for v in options["radio_producers"]],
                                         value='All producers',
                                         labelStyle={'display': 'inline-block'}),
-                                dcc.Dropdown(id='producers_drop',
-                                        options=[{'label':prod,'value':prod} for prod in options["producers_val"]],
-                                        value=[],
-                                        multi=True
-                                    )], className="mini_container",
+                                html.Div([
+                                    dcc.Dropdown(id='producers_drop',
+                                            options=[{'label':prod,'value':prod} for prod in options["producers_val"]],
+                                            value=[],
+                                            multi=True
+                                        )],id='producers_div')
+                                ], className="mini_container",
                             ),
                             html.Div([ 
                                 html.P("Filter by genres:", className="control_label"),       
@@ -180,11 +205,12 @@ def build_advance_search():
                                         value='All genres',
                                         labelStyle={'display': 'inline-block'}
                                 ),
-                                dcc.Checklist(id='genres_check',
-                                        options=[{'label':v,'value':v} for v in options["genres_val"]],
-                                        labelStyle={'display': 'inline-block'},
-                                        value=[]
-                                )],className="pretty_container",
+                                html.Div([
+                                    dcc.Checklist(id='genres_check',
+                                            options=[{'label':v,'value':v} for v in options["genres_val"]],
+                                            labelStyle={'display': 'inline-block'},
+                                            value=[])],id='genres_div')
+                                ],className="pretty_container",
                             ),
                             html.Div([
                                 html.Div([html.Button("Submit",id="submit-button")],className='mini_container'),
@@ -211,7 +237,13 @@ def build_advance_search():
             ])   
         ]
 
-def build_recommandation():
+def build_Recommendation():
+    """
+    Construction de l'onglet "Recommendation"
+
+    Returns:
+        liste définissant la structure de l'onglet
+    """
     return [html.Div([
                 html.Div([
                     html.P("Enter the titles of animes you enjoyed: ", className="control_label"),
@@ -219,8 +251,10 @@ def build_recommandation():
                         html.Div([dcc.Dropdown(id='titles_search_bar', options= options["titles"], value=[], multi=True)
                             ],className='ten columns'),
                         html.Button("Submit",id="submit-button-reco")],className='row display'),
-                    html.Div([html.P("Max. number of recommandations:",className="control_label"),
-                        dcc.Input(id="max-result-input", placeholder='Enter a value...',type='number',value=100,min=1),
+                    html.Div([html.P("Max. number of Recommendations:",className="control_label"),
+                        html.Div([
+                            dcc.Input(id="max-result-input", placeholder='Enter a value...',type='number',value=100,min=1)
+                            ],id='input_div'),
                         dcc.Checklist(id="print-all-check", options=[{'label':"See all results",'value':"See all results"}],value=[]),
                         ],className='row flex-display'),
                     ],className='pretty_container eleven columns'),
@@ -248,6 +282,30 @@ def build_recommandation():
                 ])
             ]
 
+def update_drop(id,current_val,all_var,options,radio_val=[],permit_disable=True):
+    """
+    Mise à jour du format des dropdowns
+    selon les valeurs sélectionnés
+
+    Args:
+        id: identifiant du nouveau dropdown
+        current_val: valeurs actuelles du dropdown
+        all_val: valeur englobant toutes les possibilités
+        options: ensembles des valeurs que peut prendre le dropdown
+        radio_val: valeurs des radios items associés au dropdown
+        permit_disable: activation de la possibilité de désactivation du dropdown
+    
+    Return:
+        dropdown dont le format à été mis à jour
+    """
+    if permit_disable and all_var in radio_val:
+        to_disable=True
+    else:
+        to_disable=False
+    if all_var in current_val or all_var in radio_val:
+        return dcc.Dropdown(id=id,options=options,value=all_var,multi=False,disabled=to_disable)
+    return dcc.Dropdown(id=id,options=options,value=current_val,multi=True,disabled=to_disable)
+
 #
 # Main
 #
@@ -262,12 +320,12 @@ if __name__ == '__main__':
             id="app-container",
             children=[
                 build_tabs(),
-                # Main app
                 html.Div(id="app-content"),
             ],
         ),
     ])
 
+    # Affichage de l'onglet sélectionné dans l'UI
     @app.callback(
         [Output("app-content", "children")],
         [Input("app-tabs", "value")],
@@ -277,16 +335,27 @@ if __name__ == '__main__':
         selection=[]
         global current_result_idx
         current_result_idx=0
+
+        # Choix de l'onglet à affiché
         if tab_switch == "tab1":
             return build_advance_search()
         elif tab_switch == "tab2":
-            return build_recommandation()
+            return build_Recommendation()
 
+
+    # Mise à jours de la liste d'animés selon 
+    # les filters sélectionnés dans l'UI
+    # de l'onglet "Advance search"
     @app.callback(
         [Output("anime_infos","children"),
         Output("anime_image","src"),
         Output("result_idx","children"),
-        Output("related_anime_table","data")],
+        Output("related_anime_table","data"),
+        Output('type_div', 'children'),
+        Output('rating_div', 'children'),
+        Output('status_div', 'children'),
+        Output('producers_div', 'children'),
+        Output('genres_div', 'children')],
         [Input("submit-button","n_clicks"),
         Input("back-button","n_clicks"),
         Input("next-button","n_clicks"),
@@ -306,13 +375,29 @@ if __name__ == '__main__':
         Input('producers_radio', 'value'),
         Input('producers_drop', 'value')]
     )
-    def print_advance_search_result(submit,back,next,
-        Type,rating,status,
-        score_s,score_c,duration_s,
-        duration_c,episodes_s,episodes_c,
-        year_s,year_c,genres_r,
-        genres_c,producers_r,producers_d):
+    def print_advance_search_result(submit,back,next,Type,rating,status,score_s,score_c,duration_s,
+        duration_c,episodes_s,episodes_c,year_s,year_c,genres_r,genres_c,producers_r,producers_d):
         changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+        # Mise à jour des dropdowns et checklist
+        type_div=update_drop("type_drop",Type,'All types',
+                [{'label':Type,'value':Type} for Type in options["Type_val"]+["All types"]])
+        rating_div=update_drop("rating_drop",rating,"All ratings",
+                [{'label':rating,'value':rating} for rating in options["rating_val"]+["All ratings"]])
+        status_div=update_drop("status_drop",status,"All status",
+                [{'label':status,'value':status} for status in options["status_val"]+["All status"]])
+        producers_div=update_drop("producers_drop",producers_d,"All producers",
+                [{'label':prod,'value':prod} for prod in options["producers_val"]],producers_r,True)
+        if "All genres" in genres_r:
+            genres_div= dcc.Checklist(id='genres_check',
+                                options=[{'label':v,'value':v} for v in options["genres_val"]],
+                                labelStyle={'display': 'inline-block'},value=[])
+        else:
+            genres_div= dcc.Checklist(id='genres_check',
+                                options=[{'label':v,'value':v} for v in options["genres_val"]],
+                                labelStyle={'display': 'inline-block'},value=genres_c)
+
+        # Lancement de la requête sur l'appui du bouton "submit"
         if 'submit-button' in changed_id:
             global current_result_idx
             current_result_idx=0
@@ -326,19 +411,27 @@ if __name__ == '__main__':
                                     producers={"radio":producers_r,"drop":producers_d},
                                     options=options)
             selection=select_anime(request,collection,sort={"fields":["score","popularity"],"order":[-1,-1]})
+        
+        # Défilement des résultats de la requête de sélection d'animés
         elif 'next-button' in changed_id:
             if len(selection)>0 and current_result_idx!=len(selection)-1:
                 current_result_idx+=1
         elif 'back-button' in changed_id:
             if len(selection)>0 and current_result_idx!=0:
                 current_result_idx-=1
-        return print_infos(selection,current_result_idx)
+        output=print_infos(selection,current_result_idx)
+        return output[0],output[1],output[2],output[3],type_div,rating_div,status_div,producers_div,genres_div
     
+
+    # Mise à jour de la liste de recommandation
+    # selon les titres d'animés sélectionnés dans l'UI
+    # de l'onglet "Recommendation"
     @app.callback(
         [Output("anime_infos_reco","children"),
         Output("anime_image_reco","src"),
         Output("result_idx_reco","children"),
-        Output("related_anime_table_reco","data"),],
+        Output("related_anime_table_reco","data"),
+        Output('input_div','children')],
         [Input("submit-button-reco","n_clicks"),
         Input("back-button-reco","n_clicks"),
         Input("next-button-reco","n_clicks"),
@@ -346,24 +439,33 @@ if __name__ == '__main__':
         Input('print-all-check','value'),
         Input('max-result-input','value')]
     )
-    def print_recommandation_result(submit,back,next,titles,allResult,max_result):
+    def print_Recommendation_result(submit,back,next,titles,allResult,max_result):
         changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+        # Verrouillage de "producers_drop" selon la valeur de "producers_radio"
+        if allResult!=["See all results"]:
+                input=dcc.Input(id="max-result-input", placeholder='Enter a value...',type='number',value=max_result,min=1)
+                nb_results=max_result
+        else:
+                input=dcc.Input(id="max-result-input",disabled=True, placeholder='Enter a value...',type='number',value=max_result,min=1)
+                nb_results=10**50
+
+        # Lancement de l'algo de recommendations avec l'appui sur "submit"
         if 'submit-button-reco' in changed_id and len(titles)>0:
             global current_result_idx
             current_result_idx=0
             global selection
-            if allResult!=["See all results"]:
-                selection=anime_recommandation2(titles,collection,options,max_result=max_result)
-            else:
-                selection=anime_recommandation2(titles,collection,options,max_result=10**50)
+            selection=anime_Recommendation(titles,collection,options,max_result=nb_results)
+
+        # Défilement des résultats de sélection d'animés
         elif 'next-button-reco' in changed_id and len(titles)>0:
             if len(selection)>0 and current_result_idx!=len(selection)-1:
                 current_result_idx+=1
         elif 'back-button-reco' in changed_id and len(titles)>0:
             if len(selection)>0 and current_result_idx!=0:
                 current_result_idx-=1
-
-        return print_infos(selection,current_result_idx)
+        output=print_infos(selection,current_result_idx)
+        return output[0],output[1],output[2],output[3],input
 
 # Main
 if __name__ == "__main__":

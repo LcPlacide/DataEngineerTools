@@ -3,6 +3,7 @@ from datetime import time,MAXYEAR,timedelta
 import pandas as pd
 import numpy as np
 
+# Text du popup associé au bouton "lear more"
 popup=["What is this app?\n",
 "This dash app is composed of two tabs: Advance search and Recommendation.",
 "The first one does advance anime search by filtering them by:",
@@ -125,7 +126,7 @@ def init_components(collection):
     radio_producers=["All producers","Limit to","Exactly with","Exclude"]
 
 
-    # Création de la barre de recherche de l'onglet "Recommandation"
+    # Création de la barre de recherche de l'onglet "Recommendation"
     animes=list(collection.find({}))
     titles=[{"label":anime["main_title"],"value":anime["main_title"]} for anime in animes]
 
@@ -395,12 +396,12 @@ def clean_selection(selection,collection,clean_yet=False):
 
 def find_references(references,collection,champs,NaN=None):
     """
-    Extraction des infos de références pour l'algo de recommandation
+    Extraction des infos de références pour l'algo de Recommendation
 
     Args:
         references: titres des animés de références
         collection: base de données comportant tous les animés
-        champs: liste de champs utilisés pour la recommandation
+        champs: liste de champs utilisés pour la Recommendation
         NaN: format des données manquantes
 
     Return:
@@ -461,120 +462,15 @@ def partiesliste(seq):
     return p
 
 
-def anime_recommandation(titles,collection,options,champs=["genres","duration","episodes","aired.start","main_title"],max_result=100):
+def anime_Recommendation(titles,collection,options,champs=["genres","duration","episodes","aired.start","main_title"],max_result=100):
     """
-    Algo de recommandation d'animés
-
-    Args:
-        titles: titres des animés sur lesquels se base la recommandation
-        collection: base de données comportant tous les animés
-        champs: liste de champs utilisés pour la recommandation 
-        max_result: taille maximale de la liste de recommandation
-        options: valeur prise par les sliders, dropdowns et checklists de l'UI
-    
-    Returns:
-        liste d'animés recommandés
-    """
-    # Récupération d'infos sur les animés de références
-    ref_infos=find_references(titles,collection,champs)
-
-    # Recherche d'animés partageant possédeant les genres de référence
-    under_max,selection=False,[]
-    clean_yet=False
-    if "genres" in ref_infos.keys():
-        genres_c=[]
-        for elt in ref_infos["genres"]:
-            genres_c= genres_c + elt
-        request=make_request(options=options,genres={"radio":'Limit to',"check":list(set(genres_c))})
-        select=select_anime(request,collection,champs=["main_title"],sort={"fields":["score","popularity"],"order":[-1,-1]})
-        select= set(select).difference(ref_infos["main_title"])
-        selection.append(clean_selection(list(select),collection))
-        clean_yet=True
-        under_max=(len(selection[-1])<=max_result & len(selection[-1])>0)
-        if not under_max:
-            genres_c=[set(elt) for elt in ref_infos["genres"]]
-            common_genres=genres_c[0]
-            for elt in genres_c:
-                common_genres = elt&common_genres
-            if len(common_genres)==1:
-                request=make_request(options=options,genres={'radio':'Exactly with',"check":list(common_genres)})
-                select=select_anime(request,collection,champs=["main_title"],
-                                    sort={"fields":["score","popularity"],"order":[-1,-1]})
-                select= set(select).difference(ref_infos["main_title"])
-                if len(select)>0:
-                    selection.append(clean_selection(list(select),collection,clean_yet))
-                    clean_yet=True
-                    under_max=(len(selection[-1])<=max_result)
-            elif len(common_genres)>1:
-                common_genres=partiesliste(list(common_genres))
-                for elt in common_genres:
-                    if not under_max:
-                        request=make_request(options=options,genres={'radio':'Exactly with',"check":elt})
-                        select=select_anime(request,collection,champs=["main_title"],
-                                            sort={"fields":["score","popularity"],"order":[-1,-1]})
-                        select= set(select).difference(ref_infos["main_title"])
-                        if common_genres.index(elt)==0:
-                            selection.append(clean_selection(list(select),collection))
-                        elif len(selection[-1])==0 or len(select)<len(selection[-1]):
-                            selection[-1]=clean_selection(list(select),collection)
-                            clean_yet=True
-                            under_max=(len(selection[-1])<=max_result)
-                    else:
-                        break
-
-    # Recherche d'animés ayant environ la même durée
-    if "duration" in ref_infos.keys() and not under_max:
-        mean_duration=np.mean(ref_infos["duration"])
-        limits=[round(0.75*mean_duration),round(1.25*mean_duration)]
-        request=make_request(options=options,titles=selection[-1],duration={"check":[],"slider":limits})
-        select=select_anime(request,collection,champs=["main_title"],sort={"fields":["score","popularity"],"order":[-1,-1]})
-        if len(select)>0:
-            selection.append(clean_selection(select,collection,clean_yet))
-            clean_yet=True
-            under_max=(len(selection[-1])<=max_result)
-
-    # Recherche d'animés ayant environ le même nombre d'épisodes
-    if "episodes" in ref_infos.keys() and not under_max:
-        mean_episodes=np.mean(ref_infos["episodes"])
-        limits=[round(0.75*mean_episodes),round(1.25*mean_episodes)]
-        request=make_request(options=options,titles=selection[-1],episodes={"check":[],"slider":limits,"reco":True})
-        select=select_anime(request,collection,champs=["main_title"],sort={"fields":["score","popularity"],"order":[-1,-1]})
-        if len(select)>0:
-            selection.append(clean_selection(select,collection,clean_yet))
-            clean_yet=True
-            under_max=(len(selection[-1])<=max_result)
-
-    # Recherche d'animés ayant environ le même année
-    if "aired" in ref_infos.keys() and not under_max:
-        mean_year=np.mean(ref_infos["aired"])
-        limits=[round(mean_year)-20,round(mean_year)+20]
-        request=make_request(options=options,titles=selection[-1],year={"check":[],"slider":limits})
-        select=select_anime(request,collection,champs=["main_title"],sort={"fields":["score","popularity"],"order":[-1,-1]})
-        if len(select)>0:
-            selection.append(clean_selection(select,collection,clean_yet))
-            clean_yet=True
-            under_max=(len(selection[-1])<=max_result)
-    
-    # Renvoi de la meilleur sélection
-    len_selection=pd.Series(selection).apply(lambda s: len(s) if len(s)!=0 else 10**30)
-   # print(len_selection)
-    best_selection=selection[len_selection.argmin()]
-    request=make_request(options=options,
-    titles=clean_selection(best_selection,collection,clean_yet))
-    best_selection= select_anime(request,collection,max_result=max_result,
-                                    sort={"fields":["score","popularity"],"order":[-1,-1]})
-    return best_selection
-
-
-def anime_recommandation2(titles,collection,options,champs=["genres","duration","episodes","aired.start","main_title"],max_result=100):
-    """
-    Recommandation d'animés à partir d'autres d'animés
+    Recommendation d'animés à partir d'autres d'animés
 
     Args:
         titles: titres des animés utilisé comme références
         collection: base de données comportant tous les animés
-        champs: liste de champs utilisés pour la recommandation 
-        max_result: taille maximale de la liste de recommandation
+        champs: liste de champs utilisés pour la Recommendation 
+        max_result: taille maximale de la liste de Recommendation
         options: valeur prises par les sliders, dropdowns et checklist de l'UI
     
     Returns:
