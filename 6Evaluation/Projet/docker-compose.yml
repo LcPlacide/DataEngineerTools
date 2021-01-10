@@ -18,8 +18,9 @@ services:
     ports:
       - 4444:4444
 
-  notebook:
+  scrapy:
     build: .
+    container_name: scrapy
     ports:
      - "8888:8888"
     command: ["pipenv", "run", "jupyter", "notebook", "--ip=0.0.0.0", "--no-browser", "--allow-root", "--NotebookApp.token=''"]

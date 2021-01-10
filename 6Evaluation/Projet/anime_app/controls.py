@@ -320,13 +320,15 @@ def print_infos(selection,idx):
     *** Synopsis: ***{}\n
     '''
 
-    # Valeurs par défaut de infos
+    # Valeurs par défaut des affichages
     fields=["other_titles","Type",
             "genres","producers","status","rating",
             "score","popularity","ranked",
             "start date","end date","duration",
             "episodes","synopsis","related_anime"]
     fields=dict([(field,"N\A") if field!="main_title" else (field,"...") for field in fields])
+    image="https://static.thenounproject.com/png/1554490-200.png"
+    result_title="#### 0 Results"
 
     # Edition de infos avec les champs de selection[idx]
     NA=[[],{},'None',None]
@@ -358,10 +360,7 @@ def print_infos(selection,idx):
                         table.append({'Link':key,'Titles':', '.join(anime[k][key])})
                 elif k=="image":
                     image=anime[k]
-        idx='''#### {} \nResult {} on {}'''.format(fields["main_title"],idx+1,len(selection))
-    else:
-        image="https://static.thenounproject.com/png/1554490-200.png"
-        idx="#### 0 Results"
+        result_title='''#### {} \nResult {} on {}'''.format(fields["main_title"],idx+1,len(selection))
 
     return infos.format(fields["other_titles"],
                         fields["Type"],fields["genres"],
@@ -370,7 +369,7 @@ def print_infos(selection,idx):
                         fields["popularity"], fields["ranked"],
                         fields["start date"], fields["end date"],
                         fields["duration"], fields["episodes"],
-                        fields["synopsis"], fields["related_anime"]),image,idx,table
+                        fields["synopsis"], fields["related_anime"]),image,result_title,table
 
 
 def clean_selection(selection,collection,clean_yet=False):

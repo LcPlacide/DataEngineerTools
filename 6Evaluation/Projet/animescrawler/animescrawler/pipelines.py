@@ -9,12 +9,20 @@ from itemadapter import ItemAdapter
 from datetime import datetime,MAXYEAR
 import pymongo
 
-server_name=None
-server_name="mongo"
-NA_image="https://static.thenounproject.com/png/1554490-200.png"
-
 class AnimescrawlerPipeline:
     def process_item(self, item, spider):
+        """
+        Nettoyage des champs des AnimeItems:
+        - supression des espaces en fin et en début des chaines de caractères
+        - conversion des champs score, ranked et popularity en entier ou réel
+        - conversion des champs duration et aired en datetime ou en dict de datetime
+        - remplissage des champs manquant par des None, [] ou {}
+        - jointure des lignes du champ synopsis en une seul chaine de caractères
+        - suppression dans les champs comportant des listes des doublons
+
+        Returns:
+            AnimeItem traité devant être stocké dans une base mongo
+        """
         if item["main_title"]:
             item["main_title"]=clean_string(item["main_title"])
         if item["score"]:
@@ -45,11 +53,24 @@ class AnimescrawlerPipeline:
             item["status"]=clean_string(item["status"])
         if item["aired"]:
             item["aired"]=clean_aired(item["aired"])
-        if item["image"] and item["image"]==None:
-            item["image"]=NA_image 
         return item
 
 def clean_string(field,as_set=False,to_join=False,NaN=None):
+    """
+    Suppression des espaces inutiles dans les strings
+    et formatage des données manquantes
+
+    Args:
+        field: champs à traiter
+        as_set: booléen indiquant si on veut supprimer les doublons de field
+        to_join: booléen indiquant si on veut joindre les éléments de field en
+                une seul chaine de caractère
+        NaN: format choisi pour les données manquantes de field après nettoyage
+
+    Returns:
+        chaine de caractères, dict ou liste suivant le type
+        de field dont les éléments ont été traité
+    """
     NA=['','None',"N/A",'Unknown',None,[],dict(),set(),NaN]
     if type(field)==str and field.strip() not in NA:
         return field.strip()
@@ -74,6 +95,19 @@ def clean_string(field,as_set=False,to_join=False,NaN=None):
     return NaN
 
 def clean_number(field,type,NaN=None,suppr="#"):
+    """
+    Conversion de chaines de caractères
+    en entier ou réel
+
+    Args:
+        field: chaine de caractères à convertir
+        type: type choisie (int ou float)
+        NaN: format choisi pour les données non convertissable
+        suppr: caractère devant être supprimer de field avant conversion
+
+    Returns:
+        field converti en un entier ou un réel selon type ou NaN
+    """
     try:
         if type=="int":
             return int(field.replace(suppr,""))
@@ -83,6 +117,16 @@ def clean_number(field,type,NaN=None,suppr="#"):
         return NaN
 
 def clean_duration(field,NaN=None):
+    """
+    Conversion de chaines de caractères en datetime
+
+    Args:
+        field: chaine de caractères à convertir
+        NaN: format choisi pour les données non convertissable
+    
+    Returns:
+        field converti en datetime ou NaN
+    """
     NA=['','None',"N/A",'Unknown',None,[],dict(),set(),NaN]
     field=clean_string(field,NaN=NaN)
     if field not in NA and type(field)==type(""):
@@ -93,6 +137,15 @@ def clean_duration(field,NaN=None):
     return NaN
 
 def find_month(name):
+    """
+    Conversion d'un nom de mois en numéro de mois
+
+    Args:
+        name: nom du mois
+
+    Returns:
+        numéro du mois correspondant à name
+    """
     months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
     if clean_string(name) in months:
         nb=dict([(months[i],i+1) for i in range(len(months))])
@@ -100,6 +153,19 @@ def find_month(name):
     return None
 
 def to_date(day=None,month=None,year=None,NaN=None):
+    """
+    Création de datetime à partir
+    d'un n° de jour, d'un n° de mois et d'une d'année
+
+    Args:
+        day: numéro du jour
+        month: numéro du mois
+        year: année au format yyyy
+        NaN: format choisi pour les données non convertissables
+
+    Returns:
+        datetime correspondant au day, month et year saisis ou Nan
+    """
     try:
         d=clean_number(day,"int",suppr=",")
         m=find_month(month)
@@ -114,6 +180,18 @@ def to_date(day=None,month=None,year=None,NaN=None):
             return NaN
 
 def clean_aired(field,NaN=None):
+    """
+    Conversion d'une chaine de caractères
+    en une date de début et une date de fin
+
+    Args:
+        field: chaine de caractères à convertir de format '* to *'
+        NaN: format choisi pour les données non convertissables
+
+    Returns:
+        dict contenant ayant au max. 2 clés start et end associés
+        à des datetimes ou NaN
+    """
     NA=['','None',"N/A",'Unknown',"?",None,[],dict(),set(),NaN]
     res=clean_string(field)
     if res not in NA:
@@ -150,15 +228,22 @@ class MongoPipeline(object):
     collection_name = 'myanimelist'
 
     def open_spider(self, spider):
-        if server_name!=None:
-            self.client = pymongo.MongoClient(server_name)
-        else:
-            self.client = pymongo.MongoClient()
+        """
+        Ouverture de la BDD
+        """
+        self.client = pymongo.MongoClient("mongo")
         self.db = self.client["anime"]
 
     def close_spider(self, spider):
+        """
+        Fermeture de la BDD
+        """
         self.client.close()
 
     def process_item(self, item, spider):
+        """
+        Insertion de l'AnimeItem courant précédemment 
+        nettoyé dans la collection myanimelist
+        """
         self.db[self.collection_name].insert_one(dict(item))
         return item

@@ -14,12 +14,21 @@ class MyanimelistSpider(scrapy.Spider):
     handle_httpstatus_list = [403,404]
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialisation des variables utilisés
+        pour résoudre d'éventuels captcha
+        """
         super(MyanimelistSpider, self).__init__(*args, **kwargs)
         self.CAPTCHA_DETECTION=True
         self.browser= webdriver.Remote("http://selenium:4444/wd/hub", DesiredCapabilities.FIREFOX)
         self.retry={"MAX_RETRY":4}
 
     def parse(self, response):
+        """
+        Récupération dans start_urls[0] des url pointant
+        sur les premières pages des indexs classant les animés
+        (Upcomming,Just Added,#,A,...,Z)
+        """
         if response.status in [403,404]:
             self.handle_error(response,0)
         elif response.status==200:
@@ -29,6 +38,10 @@ class MyanimelistSpider(scrapy.Spider):
                 yield Request(index_link,callback=self.parse_index_links,headers=get_random_agent())
 
     def parse_index_links(self, response):
+        """
+        Récupération dans les premières pages de chaque
+        indexs des url pointant vers des pages complémentaires
+        """
         if response.status in [403,404]:
             self.handle_error(response,1)
         elif response.status==200:
@@ -51,6 +64,10 @@ class MyanimelistSpider(scrapy.Spider):
                 self.handle_error(response,1)
         
     def parse_page_links(self,response):
+        """
+        Récupération sur les pages de chaque index des url 
+        pointant vers les page spécifiques à chaque animés
+        """
         if response.status in [403,404]:
             self.handle_error(response,2)
         elif response.status==200:
@@ -60,6 +77,10 @@ class MyanimelistSpider(scrapy.Spider):
                 yield Request(anime_link,callback=self.parse_anime_links,headers=get_random_agent())
 
     def parse_anime_links(self,response):
+        """
+        Récupération sur les pages spécifiques à chaque animé
+        des informations utiles pour construire le AnimeItems
+        """
         if response.status in [403,404]:
             self.handle_error(response,3)
         elif response.status==200:
@@ -100,6 +121,12 @@ class MyanimelistSpider(scrapy.Spider):
             )
 
     def handle_error(self,response,func_nb):
+        """
+        Traitement des erreurs 403 et 404:
+        - Appel de la fonction détetant et résolvant les captchas
+        - Planification de nouvelles tentatives de scraping pour
+          les pages érronées
+        """
         if response.status==403:
             print(5*"\n","CAPTCHA POTENTIELLEMENT ACTIF")
             self.captcha_solving(response)
@@ -122,6 +149,10 @@ class MyanimelistSpider(scrapy.Spider):
         return None
 
     def captcha_solving(self,response):
+        """
+        Détection et résolution de catcah sur le site à scraper
+        via un navigateur distant commander par selenium
+        """
         try:
             if self.CAPTCHA_DETECTION:
                 self.CAPTCHA_DETECTION=False
