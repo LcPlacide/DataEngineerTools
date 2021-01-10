@@ -13,9 +13,10 @@ Pour chaque animé disponible, on récupère:
     * ses titres alternatifs
     * son type
     * ses genres
-    * son status (diffusion terminé, diffusion en cours, à venir)
+    * son statut (diffusion terminé, diffusion en cours, à venir)
     * l'âge du public
     * la durée d'un épisode
+    * leur nombre d'épisodes
     * son synopsis
     * les animés avec qui il est lié
     * les studios de productions
@@ -81,9 +82,9 @@ Les fonctions suivantes sont définies dans myanimelist.py:
     * handle_error() est appelée à chaque erreur 403 ou 404 par les fonctions de parsing. Elle appelle la fonction résolvant les captcha et planifit les nouvelles tentatives de parsing des pages erronées
     * captcha_solving() est appelée par handle_error() en cas d'erreur 403. Celle-ci ouvre la page erronée dans un navigateur distant commandé par selenium et y résoud le captcha en cliquant sur le bouton "submit".
 
-=====================================
+======================
 Fonctions de nettoyage
-=====================================
+======================
 Les fonctions suivantes sont définies dans pipelines.py:
     * process_item() est la principale fonction de nettoyage de scrapy Item. Elle appelle un certain nombre de fonction afin de:
         * suprimer les espaces en fin et en début des chaines de caractères
@@ -108,4 +109,4 @@ Les fonctions suivantes sont définies dans pipelines.py:
     * process_item() enregistre dans la collection myanimelist les scrapy Items néttoyés
 
 NB: Pour obtenir des informations complémentaires sur les fonctions énoncées ci-dessus, consulter leurs 
-doctypes dans leur script respectifs.
+doctypes dans leurs scripts respectifs.

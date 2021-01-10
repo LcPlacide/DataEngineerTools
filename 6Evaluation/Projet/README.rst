@@ -38,4 +38,4 @@ Ouvrir le notebook animescrawler.ipynb situé dans le répertoire animescrawler 
 Relancer les containers afin de les mettre à jour
 
 NB: En cas de problèmes, la seconde cellule de ce notebook permet de charger la BDD original
-à partir d'un json fourni avec l'application.
+à partir d'un json fourni avec l'application. Pour plus d'information consulter le readme du répertoire animescrawler.
