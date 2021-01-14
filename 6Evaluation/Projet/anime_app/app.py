@@ -2,6 +2,12 @@
 # 
 # Imports
 #
+from flask import Flask, flash, redirect, render_template, \
+     request, url_for,redirect
+from werkzeug.middleware.dispatcher  import DispatcherMiddleware 
+from werkzeug.serving import run_simple 
+from random import randint
+from forms import MyForm   
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -20,6 +26,7 @@ client = pymongo.MongoClient("mongo")
 database = client.anime
 collection = database.myanimelist
 options=init_components(collection)
+start_tab="tab1"
 
 #
 # Structure de l'app
@@ -32,27 +39,20 @@ def build_banner():
     Returns:
         div html définissant l'en-tête de l'app
     """
-    return html.Div(
-            [html.Div([html.Img(
-                            src=app.get_asset_url("dash-logo.png"),
-                            id="plotly-image",
-                            style={"height": "60px",
-                                   "width": "auto",
-                                   "margin-bottom": "25px"}
-                        )], className="one-third column",
-                ),
+    return html.Div([html.Div(className="one-third column"),
                 html.Div([html.Div([html.H3("ANIMES Recommendation PROJECT",
-                                    style={"margin-bottom": "0px"}),
+                                    style={"margin-bottom": "0px"},id="textopaque"),
                           html.H5("Advance search & Recommendation by other titles", 
                                 style={"margin-top": "0px"})
                         ])
-            ], className="one-half column", id="title"),
+            ], className="pretty_container one-half column", id="title",style={"background-color":"#f9f9f9","opacity": "0.85"}),
 
             html.Div([
                 dcc.ConfirmDialogProvider(
-                            children=html.Button("Learn More", id="learn-more-button"),
+                            children=html.Button("Learn More", id="learn-more-button",style={"background-color":"#f9f9f9"}),
                             id='learn_popup',
-                            message=popup
+                            message=popup,
+                            
                         )
                 #html.Button("Learn More", id="learn-more-button")
                     ], className="one-third column", id="button"
@@ -63,10 +63,12 @@ def build_banner():
             style={"margin-bottom": "25px"},
         )
 
-def build_tabs():
+def build_tabs(start_tab="tab2"):
     """
     Création des deux onglets
     "Advance search" et "Recommendation
+    Args:
+        start_tab: tab affiché par défaut
 
     Returns:
         div html définissant les deux onglets
@@ -77,7 +79,7 @@ def build_tabs():
         children=[
             dcc.Tabs(
                 id="app-tabs",
-                value="tab2",
+                value=start_tab,
                 className="custom-tabs",
                 children=[
                     dcc.Tab(
@@ -96,7 +98,7 @@ def build_tabs():
                     ),
                 ],
             )
-        ],
+        ],style={"background-color":"#f9f9f9","opacity": "0.9"}
     )
 
 def build_advance_search():
@@ -213,28 +215,28 @@ def build_advance_search():
                                 ],className="pretty_container",
                             ),
                             html.Div([
-                                html.Div([html.Button("Submit",id="submit-button")],className='mini_container'),
-                                html.Div([html.Button("Back",id="back-button")],className='mini_container'),
-                                html.Div([html.Button("Next",id="next-button")],className='mini_container')
+                                html.Div([html.Button("Submit",id="submit-button",className="btn")],className='mini_container'),
+                                html.Div([html.Button("Back",id="back-button",className="btn")],className='mini_container'),
+                                html.Div([html.Button("Next",id="next-button",className="btn")],className='mini_container')
                             ],className="row container-display",style={"margin-left":"auto","margin-right":"auto"})
                         ],id="right-column",className="eight columns")
                     ],className="row flex-display"),
                 html.Div([
-                        html.Div([dcc.Markdown(id="anime_infos")],className="pretty_container six columns"),
+                        html.Div([dcc.Markdown(id="anime_infos")],className="pretty_container six columns",style={"background-color":  "rgb(117, 173, 156)"}),
                         html.Div([
                             dcc.Markdown(id="result_idx",
-                                        style={"margin-left":"auto","margin-right":"auto","text-align":"center"}),
+                                        style={"margin-left":"auto","margin-right":"auto","text-align":"center"},),
                             html.Img(id="anime_image",
                                 style={"display":"block",
                                         "margin-bottom":"auto", "margin-top":"auto",
-                                        "margin-left": "auto", "margin-right":"auto"}),
-                            dcc.Markdown("***\n***Related anime: ***",id="table_name"),
+                                        "margin-left": "auto", "margin-right":"auto","background-color": "rgb(117, 173, 156)"}),
+                            dcc.Markdown("***\n***Related anime: ***",id="table_name",style={"background-color": "rgb(117, 173, 156)"}),
                             dash_table.DataTable(id='related_anime_table',
                                                 style_cell={'whiteSpace': 'normal','height': 'auto'},
                                                 columns=[{"name": i, "id": i} for i in ["Link","Titles"]])
-                            ],className="pretty_container five columns")
-                    ], className="inline-block")
-            ])   
+                            ],className="pretty_container five columns",style={"background-color": "rgb(117, 173, 156)"})
+                    ], className="inline-block",style={"background-color": "rgb(117, 173, 156)"})
+            ],)   
         ]
 
 def build_Recommendation():
@@ -250,7 +252,7 @@ def build_Recommendation():
                     html.Div([
                         html.Div([dcc.Dropdown(id='titles_search_bar', options= options["titles"], value=[], multi=True)
                             ],className='ten columns'),
-                        html.Button("Submit",id="submit-button-reco")],className='row display'),
+                        html.Button("Submit",id="submit-button-reco",className="btn")],className='row display'),
                     html.Div([html.P("Max. number of Recommendations:",className="control_label"),
                         html.Div([
                             dcc.Input(id="max-result-input", placeholder='Enter a value...',type='number',value=100,min=1)
@@ -259,13 +261,13 @@ def build_Recommendation():
                         ],className='row flex-display'),
                     ],className='pretty_container eleven columns'),
                     html.Div([
-                            html.Div([html.Div([html.Button("Back",id="back-button-reco")],className='mini_container'),
-                            html.Div([html.Button("Next",id="next-button-reco")],className='mini_container')
+                            html.Div([html.Div([html.Button("Back",id="back-button-reco",className="btn")],className='mini_container'),
+                            html.Div([html.Button("Next",id="next-button-reco",className="btn")],className='mini_container')
                             ],className="row container-display",
                               style={'textAlign':'center','width': '220px','margin':'auto'})
                     ],className='eleven columns'),
                 html.Div([
-                    html.Div([dcc.Markdown(id="anime_infos_reco")],className="pretty_container six columns"),
+                    html.Div([dcc.Markdown(id="anime_infos_reco")],className="pretty_container six columns",style={"background-color": "rgb(117, 173, 156)"}),
                     html.Div([
                         dcc.Markdown(id="result_idx_reco",
                                     style={"margin-left":"auto","margin-right":"auto","text-align":"center"}),
@@ -273,12 +275,12 @@ def build_Recommendation():
                             style={"display":"block",
                                     "margin-bottom":"auto", "margin-top":"auto",
                                     "margin-left": "auto", "margin-right":"auto"}),
-                        dcc.Markdown("***\n***Related anime: ***",id="table_name_reco"),
+                        dcc.Markdown("***\n***Related anime: ***",id="table_name_reco",style={"background-color": "rgb(117, 173, 156)"}),
                         dash_table.DataTable(id='related_anime_table_reco',
                                 style_cell={'whiteSpace': 'normal','height': 'auto'},
                                 columns=[{"name": i, "id": i} for i in ["Link","Titles"]])
-                        ],className="pretty_container five columns")
-                    ], className="inline-block")
+                        ],className="pretty_container five columns",style={"background-color": "rgb(117, 173, 156)"})
+                    ], className="inline-block",style={"background-color": "rgb(117, 173, 156)"})
                 ])
             ]
 
@@ -312,14 +314,15 @@ def update_drop(id,current_val,all_var,options,radio_val=[],permit_disable=True)
 
 if __name__ == '__main__':
 
-    app = dash.Dash(__name__,suppress_callback_exceptions=True) 
+    server = Flask(__name__) 
+    app = dash.Dash(__name__,server=server, url_base_pathname='/dash/',suppress_callback_exceptions=True)
 
     app.layout=html.Div(children=[
         build_banner(),
         html.Div(
             id="app-container",
             children=[
-                build_tabs(),
+                build_tabs(start_tab),
                 html.Div(id="app-content"),
             ],
         ),
@@ -469,4 +472,78 @@ if __name__ == '__main__':
 
 # Main
 if __name__ == "__main__":
+    server.config['SECRET_KEY'] = 'you-will-never-guess'
+
+    @server.route('/')
+    def rien():
+        return "Rien ici... <a href='/home'> voir là </a> "
+
+    @server.route('/home', methods=('GET', 'POST'))
+    def home():
+        form = MyForm()
+        res=".*"+str(form.name.data)+".*"
+        results=list(collection.find({"main_title" : {"$regex": res,'$options': 'i'}}))
+        NA=[[],None,{}]
+        NaN="N\A"
+        for anime in results:
+            for key in anime.keys():
+                if anime[key] not in NA:
+                    if key=="aired" and "start" in anime[key].keys():
+                        if type(anime[key]["start"])==int:
+                            anime[key]["start"]=str(anime[key]["start"])
+                        elif type(anime[key]["start"])==type(datetime.datetime.today()):
+                            anime[key]["start"]=str(anime[key]["start"].date())
+                    if key in ["score","episoded","ranked","popularity"]:
+                        anime[key]==str(anime[key])
+                    
+                else:
+                    if key=="aired":
+                        anime[key]={"start":NaN}
+                    else:
+                        anime[key]=NaN
+        
+                    
+        if form.validate_on_submit():
+            return render_template('search_bar.html',tasks=results,form=form)
+        return render_template('search_bar.html',tasks=results,form=form)
+
+    @server.route('/page/<string:user>')
+    def page(user):
+        results=list(collection.find({"main_title":user}))
+        NA=[[],None,{}]
+        NaN="N\A"
+        for anime in results:
+            for key in anime.keys():
+                if anime[key] not in NA:
+                    if key=="aired" and "start" in anime[key].keys():
+                        if type(anime[key]["start"])==int:
+                            anime[key]["start"]=str(anime[key]["start"])
+                        elif type(anime[key]["start"])==type(datetime.datetime.today()):
+                            anime[key]["start"]=str(anime[key]["start"].date())
+                    if key in ["score","episoded","ranked","popularity","duration"]:
+                        anime[key]==str(anime[key])
+                    elif type(anime['duration'])==type(datetime.datetime.today()):
+                            anime['duration']=str(anime['duration'].time())
+                    elif key in ["genres","other_titles","producers"]:
+                        anime[key]=",".join(anime[key])
+                    if key=="aired" and "end" in anime[key].keys():
+                        if type(anime[key]["end"])==int:
+                            anime[key]["end"]=str(anime[key]["end"])
+                        elif type(anime[key]["end"])==type(datetime.datetime.today()):
+                            anime[key]["end"]=str(anime[key]["end"].date())
+
+                else:
+                    if key=="aired":
+                        anime[key]={"start":NaN}
+                    else:
+                        anime[key]=NaN
+
+        return render_template('information.html',info=results)
+
+    @server.route('/dash') 
+    def render_advance_search(): 
+        return redirect('/dash1') 
+
+    app1 = DispatcherMiddleware(server, { '/dash1': app.server}) 
+    run_simple('0.0.0.0',8050, app1, use_reloader=True, use_debugger=True, threaded=True)
     app.run_server(debug=True, port=8050, host="0.0.0.0")

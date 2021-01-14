@@ -1,0 +1,49 @@
+
+{% extends "base1.html" %}
+{% block title %}Home Page {% endblock %}
+{% block content %}
+<div id="search">
+    <div>
+        <h1>Something</h1>
+    </div>
+    <div id="content">
+        <div class="breadcrumb" itemscope="" itemtype="http://shema.org/BreadcrumbList"></div>
+    </div>
+    <div>
+        <form class="form-inline my-2 my-lg-0" id="advanced-search" method="POST" action="/home" >
+            {{ form.hidden_tag() }}
+            
+            
+            <div class="anime-search-form-block">
+                <div class="anime-search-form-search">
+                    <label for="name">
+                        
+                    </label>
+                    <input id="name" name="name" required="" type="text" class="form-control mr-sm-2" placeholder="Search Anime..." aria-label="Search Anime" size="70px">
+                    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+
+                </div>
+                
+            </div>
+           
+               
+            <div>
+                {% for task_id in tasks %}
+                    <h3>{{task_id}}</h3>
+                {% endfor %}
+            </div>
+        </form>
+    </div>
+</div>
+
+{%endblock%}
+
+
+<div class="anime-search-form-search">
+    <label for="name">
+        Name
+    </label>
+    <input id="name" name="name" required="" class="form-control mr-sm-2" type="text" placeholder="Search Anime..." aria-label="Search Anime" size="70px">
+    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+</div>
+

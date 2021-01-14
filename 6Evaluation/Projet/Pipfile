@@ -4,11 +4,10 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-matplotlib = "==3.3.2"
 pandas = "==1.1.4"
 Scrapy = "==2.4.0"
-pymongo = "==3.11.0"
 requests = "==2.24.0"
+pymongo = "==3.11.0"
 jupyter = "*"
 selenium = "*"
 itemadapter = "==0.2.0"

@@ -1,0 +1,86 @@
+
+{% extends "base1.html" %}
+{% block title %}Home Page {% endblock %}
+{% block content %}
+<div id="search">
+    <div class= "search_title">
+        <h1>Research</h1>
+    </div>
+    <!div id="content">
+        <!div class="breadcrumb" itemscope="" itemtype="http://shema.org/BreadcrumbList"></div>
+    <!/div>
+    <div>
+        <form class="form-inline my-2 my-lg-0" id="advanced-search" method="POST" action="/home" >
+            {{ form.hidden_tag() }}
+            
+            
+            <div class="anime-search-form-block">
+                <div class="anime-search-form-search">
+                    <label for="name">
+                        
+                    </label>
+                    <input id="name" name="name" required="" type="text" class="form-control mr-sm-2" placeholder="Search Anime..." aria-label="Search Anime" size="70px">
+                    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+
+                </div>
+                
+            </div>  
+            <div>
+                {% for task_id in tasks %}
+                <div class = warpa>
+                    <div class="col-12  bloc_search">
+                        <div  class=page_anime>
+                            <div class="video_item_list">
+                                <span>
+                                    <img src="{{task_id['image']}}" class=anime_search_bar_image>
+                                </span>
+                                <span>
+                                    <div class='image_search' >
+                                        <div class='top' >
+                                            <div><a class=genre-link href="{{url_for('page',user=task_id['main_title'])}}"><span class='breakAll float'>{{task_id['main_title']}}</span ></a>
+                                                
+                                            <span class='episodes' title="Nombre d'episodes"><span class=Score>Number of episodes :</span> <span class= text_anime>{{task_id['episodes']}}</span></span>
+                                            </div>
+                                            <div class=score><span class=Score>Score : </span> <span class= text_anime>{{task_id['score']}}</span></div>
+                                           
+                                            <div class=aired><span class=Score>Released : </span><span class= text_anime>{{task_id['aired']['start']}}</span> </div>
+                                            <div class= "breakAll psis"><span class=Score>Synopsis : </span><span class="text_anime_description">{{task_id['synopsis'][0:300]}}...</span></div>
+                                            
+                                            
+                                            
+                                        </div>
+                                    </div>
+                                        
+                                </span>
+                                
+                                    
+                                    
+
+                                
+                                
+                            </div>
+                        </div>
+                        
+                        
+                    </div>
+                    
+                    
+                </div>
+                    
+                {% endfor %}
+            </div>
+        </form>
+    </div>
+</div>
+
+{%endblock%}
+
+
+<div class="anime-search-form-search">
+    <label for="name">
+        Name
+    </label>
+    <input id="name" name="name" required="" class="form-control mr-sm-2" type="text" placeholder="Search Anime..." aria-label="Search Anime" size="70px">
+    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+</div>
+

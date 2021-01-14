@@ -1,0 +1,42 @@
+{% extends "base1.html" %}
+{% block title %}Home Page {% endblock %}
+{% block content %}
+<div class='bloc_info'>
+{{info[0]['main_title']}}
+</div>
+
+<div class=info_img>
+    <img src="{{info[0]['image']}}" alt='Image' >
+</div>
+<div class=descrption_info>
+    <div class= other_titles_info><span class=title_under_info>Other titles : </span>{{info[0]['other_titles']}}</div>
+    <div class= 'score_info'><span class=title_under_info>Score :</span> {{info[0]['score']}}</div> 
+    <div class=ranked_info><span class=title_under_info>Ranked :</span> {{info[0]['ranked']}}</div>
+    <div class=genres_info><span class=title_under_info>Genres : </span> {{info[0]['genres']}}</div>
+    
+    <div class=status_info><span class=title_under_info>Status : </span> {{info[0]['status']}}</div>
+    
+    <div class = rating_info><span class=title_under_info>Rating : </span>{{info[0]['rating']}}</div>
+    
+    <div class = type_info><span class=title_under_info>Type : </span>{{info[0]['Type']}}</div>
+    
+    <div class = popularity_info><span class=title_under_info>Popularity : </span>{{info[0]['popularity']}}</div>
+    
+    <div class = aired_start_info><span class=title_under_info>Released : </span>{{info[0]['aired']['start']}}</div>
+    
+    <div class = aired_end_info><span class=title_under_info>Ended : </span>{{info[0]['aired']['end']}}</div>
+    
+    <div class = duration_info><span class=title_under_info>Duration : </span>{{info[0]['duration']}}</div>
+    
+    <div class = episodes_info><span class=title_under_info>Number of episodes : </span>{{info[0]['episodes']}}</div>
+    
+    <div class = producers_info><span class=title_under_info>Producer : </span>{{info[0]['producers']}}</div>
+    
+    <div class = synopsis_info><span class=title_under_info>Synopsis : </span>{{info[0]['synopsis']}}</div>
+    
+</div>
+   
+
+
+{%endblock%}
+

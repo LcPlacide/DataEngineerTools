@@ -1,0 +1,447 @@
+.basic{
+    background-image: url(https://image.animedigitalnetwork.fr/license/mha/tv4/web/affiche_370x0.jpg);
+}
+
+.basic #page {
+    margin-bottom: 0;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+    text-align: left;
+    width: 900px;
+    padding-bottom: 24px !important;
+    border-radius: 5px;
+}
+#nav{
+    border-radius: 5px;
+    background-color: rgb(209, 230, 230);
+    font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+}
+#headerSmall {
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #fff;
+    background-image: url(https://i.pinimg.com/originals/d1/00/92/d1009254c0370706696faad1800154aa.jpg);
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 180px;
+    padding: 10px 0 2px;
+    position: relative;
+    border-radius: 5px;
+    
+}
+#contentWrapper {
+    background-color: #fff;
+    min-height: 555px;
+    padding-bottom: 30px;
+    position: relative;
+}
+
+.horiznav_nav .ul {
+    display: inline;
+    font-family: arial,helvetica,sans-serif;
+    margin-left: 0;
+    margin-top: 0;
+    padding-left: 0;
+}
+
+
+.horiznav_nav {
+    border-color: #1d439b;
+    border-style: solid;
+    border-width: 0 0 1px;
+    margin-bottom: 8px;
+    margin-top: 16px;
+    padding: 0 0 2px;
+}
+
+
+.anime-search-form-block {
+    display: block;
+    margin: 30px auto;
+    width: 768px;
+    
+}
+.anime-search-form-block .anime-search-form-search .inputtext 
+{
+    border: #c3c3c3 1px solid;
+    border-right-color: rgb(195, 195, 195);
+    border-right-style: solid;
+    border-right-width: 1px;
+    border-radius: 8px 0 0 8px;
+    border-right: #c3c3c3 0 solid;
+    color: #323232;
+    display: block;
+    float: left;
+    font-size: 14px;
+    height: 48px;
+    margin: 0;
+    padding: 0;
+    text-indent: 10px;
+    width: 715px;
+}
+
+.advanced_search_button {
+    float: right !important;
+}
+
+.advanced_search_button .advanced {
+    display: inline-block;
+    font: normal normal normal 14px/1 FontAwesome;
+        font-size: 14px;
+    font-size: inherit;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: auto;
+}
+.genres {
+    padding-bottom: 15px !important;
+    padding-right: 10px;
+    padding-left: 10px;
+}
+
+.search_title{
+    background-color: rgb(117, 173, 156);
+    font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    font-size: small;
+    border-radius: 5px;
+    color:rgb(231, 231, 231);
+    padding-left: 5px;
+}
+
+.header_genres {
+    border-color: #bebebe;
+    border-style: solid;
+    border-width: 0 0 1px;
+    color: #000;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 5px;
+    margin-top: 4px;
+    padding: 3px 0;
+    padding-top: 3px;
+    font-family: arial,helvetica,sans-serif;
+}
+.genre-link {
+    color: black;
+    border-collapse: collapse;
+    display: table;
+}
+.genre-link .genre-list {
+    border-bottom: 1px solid;
+    display: table-cell;
+    font-family: Avenir,lucida grande,tahoma,verdana,arial,sans-serif;
+    font-size: 12px;
+    padding: 0;
+    width: 208px;
+}
+
+.genre-link .genre-list .genre-name-link {
+    
+    display: block;
+    margin-right: 8px;
+    padding: 12px 0 12px 16px;
+    position: relative;
+    text-decoration: none;
+    -webkit-transition-duration: .2s;
+    transition-duration: .2s;
+    -webkit-transition-property: all;
+    transition-property: all;
+    -webkit-transition-timing-function: ease-in-out;
+    transition-timing-function: ease-in-out;
+}
+.studio
+{
+    padding-top: 24px !important;
+    padding-bottom: 15px;
+    padding-right: 10px;
+    padding-left: 10px;
+}
+
+.search{
+    background-color: rgb(198, 198, 255);
+}
+
+.btn{
+    background-color:teal !important;
+    color:white;
+    border-color: white;
+}
+
+.warpa{
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.auto-col {
+    position: relative;
+    min-height: 1px;
+    padding: 0px 15px;
+    -ms-flex: 0 0 auto;
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 990px;
+    }
+
+.bloc_search{
+    display: flex;
+    flex-wrap: wrap;
+    background-color:  rgb(117, 173, 156);
+    margin-bottom: 10px;
+    border-radius: 5px;
+    width: 900px;
+    padding-left: 5px;
+    overflow: hidden;
+    height: 330px;
+    
+}
+.top {
+    
+    overflow:hidden;
+    margin-left: 5px;
+    display: block;
+    line-height: 24px;
+    
+    left:250px;
+    top:10px;
+    margin-bottom: 5px;
+    float: left;
+    margin-top: 5px;
+    width: 650px;
+    
+    
+}
+.image_search{
+    overflow:hidden;
+    margin-left: 5px;
+    display: block;
+    line-height: 24px;
+    
+    left:250px;
+    top:10px;
+    margin-bottom: 5px;
+    float: left;
+    position:absolute;
+    
+}
+
+.episodes {
+    float: none;
+    display: inline-block;
+    font-size: .8em;
+    margin-left:10px;
+    overflow:hidden;
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+
+}
+
+
+
+.main_title{
+    display: table-cell;
+    height: 40px;
+    margin: 0;
+    overflow: hidden;
+    text-align: center;
+    vertical-align: middle;
+    width: 500px;
+}
+
+.float{
+    margin-bottom: 5px;
+    margin-top: 5px;
+    margin-left:10px;
+    margin-right:10px;
+    color:black;
+    font-family: cursive;
+    font-weight: bold;
+    font-size: 20px;
+    padding-top: 10px;
+    display:inline-block;
+    width: 600px;
+}
+.video-item-list {
+    
+    display: block;
+    background-color: rgba(0,0,0,.28);
+    margin: 2px 0;
+    
+   
+}
+.anime_search_bar_image{
+    padding-block: 10px;
+    
+}
+
+
+.synopsis {
+    float: none;
+    display: inline-block;
+    font-size: .8em;
+    margin-left:10px
+    
+}
+.psis{
+  padding: 10px;
+  border: collapse;
+  box-sizing: border-box;
+ 
+  width: 500px;
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: 1px;
+  text-align: left;
+  font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+
+    
+}
+.breakAll {
+    word-break: break-word;
+  }
+.para_search{
+    padding: 10px;
+    margin: 9px 0 5px;
+    background-color: rgba(0,0,0,.2);
+    border-radius: 3px;
+}
+
+.score{
+    border: collapse;
+    box-sizing: border-box;
+    margin-left:10px;
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+
+}
+
+.aired{
+    border: collapse;
+    box-sizing: border-box;
+    margin-left:10px;
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+
+}
+
+.body {
+    background-image: url('https://manga.tokyo/wp-content/uploads/2016/12/MHA2_poster_s-1.jpg');
+  }
+
+.bloc_info{
+    background-color:  rgb(117, 173, 156);
+    color:rgb(231, 231, 231);
+    font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    font-size: small;
+    font-size: 30px;
+    border-radius: 5px;
+    border-radius: 5px;
+    padding-left: 5px;
+   
+  }
+
+.info_img{    
+    padding-top: 20px;
+    background-color: whitesmoke;
+    text-align: center;
+    position:relative;
+}
+
+.descrption_info{
+    background-color: whitesmoke;
+    text-align: leftS;
+    position:relative;
+    padding-top:40px;
+    padding-left: 15px;
+    padding-right: 10px;
+    padding-bottom: 10px;
+    font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    font-size: 14px;
+
+}
+
+.other_titles_info{
+padding-top: 5px;
+padding-bottom: 5px;
+font-family: Arial, Helvetica, sans-serif;
+}
+
+.score_info{
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.ranked_info{
+    padding-top: 5px;
+    padding-bottom: 5px;
+    }
+
+.genres_info{
+    padding-top: 5px;
+    padding-bottom: 5px;
+    }
+.status_info{
+    padding-top: 5px;
+    padding-bottom: 5px;
+    }
+.type_info{
+    padding-top: 5px;
+    padding-bottom: 5px;
+    }
+.popularity_info{
+    padding-top: 5px;
+    padding-bottom: 5px;
+    }
+.aired_start_info{
+    padding-top: 5px;
+    padding-bottom: 5px;
+    }
+.aired_end_info{
+    padding-top: 5px;
+    padding-bottom: 5px;
+    }
+.duration{
+    padding-top: 5px;
+    padding-bottom: 5px;
+    }
+.episodes_info{
+    padding-top: 5px;
+    padding-bottom: 5px;
+    }
+.producers_info{
+    padding-top: 5px;
+    padding-bottom: 5px;
+    }
+.synopsis_info{
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.title_under_info{
+    
+font-family: Arial, Helvetica, sans-serif;
+font-size :15px;
+font-weight: bold;
+}
+
+
+
+.page_anime{
+    align-content: center;
+}
+
+.Score{
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size :15px;
+    font-weight: bold;
+    color : rgb(43, 43, 43)
+}
+
+.text_anime{
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size :15px;
+    color : rgb(53, 53, 53);
+}
+
+.text_anime_description{
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size :15px;
+    color : rgb(75, 75, 75);
+}

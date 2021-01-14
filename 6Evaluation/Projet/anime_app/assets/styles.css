@@ -3,9 +3,16 @@
   margin-right: 3.5%;
 }
 
+.btn{
+  background-color:teal !important;
+  color:white;
+  border-color: grey;
+}
+
 body {
   background-color: #f2f2f2;
   margin: 5%;
+  background-image: url(https://image.animedigitalnetwork.fr/license/mha/tv4/web/affiche_370x0.jpg);
 }
 
 .two.columns {
