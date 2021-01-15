@@ -6,23 +6,40 @@ anime_app
 Structure générale
 ==================
 
-L'application web se compose deux onglets: Advance search et Recommendation.
+L'application web se compose de 3 onglets: Search, Advance search et Recommendation.
 
-Le premier onglet permet de réaliser des recherches avancés d'animés en les filtrant par:
+Le premier onglet est le moteur de recherche d'animés de l'application.
+
+Le second onglet permet de réaliser des recherches avancés d'animés en les filtrant par:
     * leurs genres
     * leur première date de diffusion
     * leur statut
     * leur type
     * leur durée par épisode
-    * l'âge de leur public
+    * l'âge du public visé
     * leurs studios de production
     * leur score
     * leur nombre d'épisodes
 
-Le second onglet recommande à l'utilisateur un certain nombre d'animés 
+Le dernier onglet recommande à l'utilisateur un certain nombre d'animés 
 en se basant sur des titres que ce dernier à apprécier.
 
-Dans ces deux onglets, les animés proposés sont classés selon leur score et leur popularité sur le site https://myanimelist.net/.
+Dans les deux derniers onglets, les animés proposés sont classés selon leur score et leur popularité sur le site https://myanimelist.net/.
+
+L'onglet sur lequel l'utilisatuer arrive par défaut est l'onglet Search. 
+Il peut changer d'onglet grâce à la barre de navigation situé en haut de chaque page. 
+
+=============
+Onglet Search
+=============
+
+Cette onglet contient en tête de page une barre de recherche permettant de rechercher un animé avec un ensemble 
+mot-clés. Une recherche dans la BDD est lancée lorsque l'utilisateur appuie sur le bouton research situé
+à gauche de la barre de saisie. Les principales informations sur les animés correspondant aux mot-clés apparaitront alors en-dessous de la barre
+de recherche. 
+
+En cliquant sur le titre d'un animé, l'utilisateur est directement renvoyé sur la page contenant toutes 
+les informations liées à ce dernier.
 
 =====================
 Onglet Advance search
@@ -58,9 +75,12 @@ Contenu de anime_app
 ====================
 
 Ce répertoire contient :
-    * assets est le dossier comportant les éléments CSS et les images utilisés dans la mise en page de l'application
+    * assets est le dossier comportant les éléments CSS et les images utilisés dans la mise en page des onglets Advance search et Recommendation
+    * static contient les éléments CSS utilisés dans la mise en page des pages liée au moteur de recherche
+    * templates contient les templates jinja2 utilisées dans les pages liées au moteur de recherche
     * app.py définit les strutures de chaque onglets et les modlaités de mise à jour de ces derniers
     * controls.py contient les fonctions contenant les valeurs et labels utilisés pour construire les dropdowns, sliders et checklist de l'UI. Il contient aussi les fonctions requêtant la BDD d'animés et celles créant le contenu des cases de résultats.
+    * forms.py définit la structure du formulaire utilisées pour réaliser la fonctionnalité moteur de recherche
     * requirements.txt contient la liste des packages nécessaires pour faire tourner l'application dans son containers
     * Dockerfile définissant l'image utilisée pour construire le container anime_app
 

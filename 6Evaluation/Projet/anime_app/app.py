@@ -29,8 +29,9 @@ options=init_components(collection)
 start_tab="tab1"
 
 #
-# Structure de l'app
+# Dash app
 #
+
 def build_banner():
     """
     Création de la bannière commune
@@ -308,10 +309,6 @@ def update_drop(id,current_val,all_var,options,radio_val=[],permit_disable=True)
         return dcc.Dropdown(id=id,options=options,value=all_var,multi=False,disabled=to_disable)
     return dcc.Dropdown(id=id,options=options,value=current_val,multi=True,disabled=to_disable)
 
-#
-# Main
-#
-
 if __name__ == '__main__':
 
     server = Flask(__name__) 
@@ -470,7 +467,10 @@ if __name__ == '__main__':
         output=print_infos(selection,current_result_idx)
         return output[0],output[1],output[2],output[3],input
 
-# Main
+#
+# Flask app
+#
+
 if __name__ == "__main__":
     server.config['SECRET_KEY'] = 'you-will-never-guess'
 
@@ -484,7 +484,7 @@ if __name__ == "__main__":
         res=".*"+str(form.name.data)+".*"
         results=list(collection.find({"main_title" : {"$regex": res,'$options': 'i'}}))
         NA=[[],None,{}]
-        NaN="N\A"
+        NaN=""
         for anime in results:
             for key in anime.keys():
                 if anime[key] not in NA:
@@ -511,7 +511,7 @@ if __name__ == "__main__":
     def page(user):
         results=list(collection.find({"main_title":user}))
         NA=[[],None,{}]
-        NaN="N\A"
+        NaN=""
         for anime in results:
             for key in anime.keys():
                 if anime[key] not in NA:
@@ -525,7 +525,7 @@ if __name__ == "__main__":
                     elif type(anime['duration'])==type(datetime.datetime.today()):
                             anime['duration']=str(anime['duration'].time())
                     elif key in ["genres","other_titles","producers"]:
-                        anime[key]=",".join(anime[key])
+                        anime[key]=", ".join(anime[key])
                     if key=="aired" and "end" in anime[key].keys():
                         if type(anime[key]["end"])==int:
                             anime[key]["end"]=str(anime[key]["end"])

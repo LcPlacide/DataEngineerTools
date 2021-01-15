@@ -284,7 +284,7 @@ def select_anime(request,collection,champs=[],max_result=10**30,sort={"fields":N
     return list(collection.find(request))
 
 
-def print_infos(selection,idx):
+def print_infos(selection,idx,NaN=''):
     """
     Mise en forme de la chaine de caractère
     contenant les infos relatives à l'anime
@@ -326,7 +326,7 @@ def print_infos(selection,idx):
             "score","popularity","ranked",
             "start date","end date","duration",
             "episodes","synopsis","related_anime"]
-    fields=dict([(field,"N\A") if field!="main_title" else (field,"...") for field in fields])
+    fields=dict([(field,NaN) if field!="main_title" else (field,"...") for field in fields])
     image="https://static.thenounproject.com/png/1554490-200.png"
     result_title="#### 0 Results"
 
