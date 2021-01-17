@@ -14,6 +14,7 @@ import dash_html_components as html
 import dash_table
 import pymongo
 import datetime
+import json
 from datetime import time, MAXYEAR, timedelta
 from dash.dependencies import Input, Output, State
 from controls import init_components, make_request, select_anime, print_infos, anime_Recommendation,popup
@@ -21,10 +22,28 @@ from controls import init_components, make_request, select_anime, print_infos, a
 #
 # Data
 #
-#client = pymongo.MongoClient()
+# Ouverture de la base
 client = pymongo.MongoClient("mongo")
 database = client.anime
 collection = database.myanimelist
+
+# Chargement éventuel de la BDD originale
+if "anime" not in client.list_database_names():
+    with open("Original_BDD.json") as f:
+        DOCUMENTS = json.load(f)
+    for i in range(len(DOCUMENTS)):
+        DOCUMENTS[i]["_id"]=i
+        if DOCUMENTS[i]["duration"]!=None:
+            DOCUMENTS[i]["duration"]=datetime.datetime.strptime(DOCUMENTS[i]["duration"], '%Y-%m-%d %H:%M:%S')
+        if DOCUMENTS[i]["aired"]!=None:
+            for k in DOCUMENTS[i]["aired"].keys():
+                if type(DOCUMENTS[i]["aired"][k])==str and not DOCUMENTS[i]["aired"][k].isdigit():
+                    DOCUMENTS[i]["aired"][k]=datetime.datetime.strptime(DOCUMENTS[i]["aired"][k],'%Y-%m-%d %H:%M:%S')
+                elif type(DOCUMENTS[i]["aired"][k])==str and DOCUMENTS[i]["aired"][k].isdigit():
+                    DOCUMENTS[i]["aired"][k]=int(DOCUMENTS[i]["aired"][k])
+    collection.insert_many(DOCUMENTS)
+
+# Création des labels des composants dash
 options=init_components(collection)
 start_tab="tab1"
 
