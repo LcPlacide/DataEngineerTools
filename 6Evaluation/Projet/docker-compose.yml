@@ -10,7 +10,7 @@ services:
       - MONGO_DATA_DIR=/data/db
       - MONGO_LOG_DIR=/dev/null
     volumes:
-      - ./data/db:/data/db
+      - ./data/mongo:/data/db
 
   selenium:
     image: selenium/standalone-firefox
@@ -41,5 +41,4 @@ services:
     links: 
       - mongo
     volumes:
-      - "$PWD/anime_app:/home/flask"
-      
+      - ./anime_app:/home/flask
