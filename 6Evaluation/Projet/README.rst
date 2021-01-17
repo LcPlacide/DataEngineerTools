@@ -14,8 +14,8 @@ Pour vérifier qu'ils tournent correctement, on utilise la commande:
 
     docker-compose ps
 
-Pour consulter l'application web, on se rend à l'url http://localhost:8050/
-    
+Pour consulter l'application web, on se rend à l'url http://localhost:8050/home
+
 On stoppent les containers avec la commande:
 
 .. code-block:: bash
