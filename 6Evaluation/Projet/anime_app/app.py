@@ -59,7 +59,7 @@ def build_banner():
     Returns:
         div html définissant l'en-tête de l'app
     """
-    return html.Div([html.Div(className="one-third column"),
+    return html.Div([html.Div([html.A(html.Button("Home", id="home-button",style={"background-color":"#f9f9f9"}),href="http://localhost:8050/home")],className="one-third column"),
                 html.Div([html.Div([html.H3("ANIMES Recommendation PROJECT",
                                     style={"margin-bottom": "0px"},id="textopaque"),
                           html.H5("Advance search & Recommendation by other titles", 
@@ -253,7 +253,7 @@ def build_advance_search():
                             dcc.Markdown("***\n***Related anime: ***",id="table_name",style={"background-color": "rgb(117, 173, 156)"}),
                             dash_table.DataTable(id='related_anime_table',
                                                 style_cell={'whiteSpace': 'normal','height': 'auto'},
-                                                columns=[{"name": i, "id": i,"presentation":"markdown"} for i in ["Link","Titles"]],editable=True)
+                                                columns=[{"name": i, "id": i,"presentation":"markdown"} for i in ["Link","Titles"]])
                             ],className="pretty_container five columns",style={"background-color": "rgb(117, 173, 156)"})
                     ], className="inline-block",style={"background-color": "rgb(117, 173, 156)"})
             ],)   
