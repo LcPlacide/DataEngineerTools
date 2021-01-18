@@ -253,7 +253,7 @@ def build_advance_search():
                             dcc.Markdown("***\n***Related anime: ***",id="table_name",style={"background-color": "rgb(117, 173, 156)"}),
                             dash_table.DataTable(id='related_anime_table',
                                                 style_cell={'whiteSpace': 'normal','height': 'auto'},
-                                                columns=[{"name": i, "id": i} for i in ["Link","Titles"]])
+                                                columns=[{"name": i, "id": i,"presentation":"markdown"} for i in ["Link","Titles"]],editable=True)
                             ],className="pretty_container five columns",style={"background-color": "rgb(117, 173, 156)"})
                     ], className="inline-block",style={"background-color": "rgb(117, 173, 156)"})
             ],)   
@@ -298,7 +298,7 @@ def build_Recommendation():
                         dcc.Markdown("***\n***Related anime: ***",id="table_name_reco",style={"background-color": "rgb(117, 173, 156)"}),
                         dash_table.DataTable(id='related_anime_table_reco',
                                 style_cell={'whiteSpace': 'normal','height': 'auto'},
-                                columns=[{"name": i, "id": i} for i in ["Link","Titles"]])
+                                columns=[{"name": i, "id": i,"presentation":"markdown"} for i in ["Link","Titles"]])
                         ],className="pretty_container five columns",style={"background-color": "rgb(117, 173, 156)"})
                     ], className="inline-block",style={"background-color": "rgb(117, 173, 156)"})
                 ])

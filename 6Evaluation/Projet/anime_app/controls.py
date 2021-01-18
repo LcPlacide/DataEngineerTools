@@ -357,7 +357,8 @@ def print_infos(selection,idx,NaN=''):
                 elif k=="related_anime":
                     for key in anime[k].keys():
                         table=[]
-                        table.append({'Link':key,'Titles':', '.join(anime[k][key])})
+                        link= ['''[{}]('http://localhost:8050/page/'{})'''.format(title,title.replace(" ","%20")) for title in anime[k][key]]
+                        table.append({'Link':key,'Titles':', '.join(link)})
                 elif k=="image":
                     image=anime[k]
         result_title='''#### {} \nResult {} on {}'''.format(fields["main_title"],idx+1,len(selection))
