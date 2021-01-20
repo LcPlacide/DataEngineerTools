@@ -22,6 +22,7 @@ from controls import init_components, make_request, select_anime, print_infos, a
 #
 # Data
 #
+
 # Ouverture de la base
 client = pymongo.MongoClient("mongo")
 database = client.anime
