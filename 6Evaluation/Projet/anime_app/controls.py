@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import datetime
 from datetime import time,MAXYEAR,timedelta
 import pandas as pd
@@ -115,6 +116,7 @@ def init_components(collection):
     for g in genres:
         genres_val= genres_val+g
     genres_val=set(genres_val)
+    genres_val= sorted(list(genres_val),key=str.lower)
     radio_genres=["All genres","Limit to","Exactly with","Exclude"]
 
     producers=collection.aggregate([{"$group" : {"_id" : "$producers"}}])
@@ -123,12 +125,14 @@ def init_components(collection):
     for p in producers:
         producers_val= producers_val+p
     producers_val=set(producers_val)
+    producers_val= sorted(list(producers_val),key=str.lower)
     radio_producers=["All producers","Limit to","Exactly with","Exclude"]
 
 
     # Création de la barre de recherche de l'onglet "Recommendation"
     animes=list(collection.find({}))
-    titles=[{"label":anime["main_title"],"value":anime["main_title"]} for anime in animes]
+    Titles=sorted([anime["main_title"] for anime in animes],key=str.lower)
+    titles=[{"label":title.replace("U+002F","/"),"value":title} for title in Titles]
 
     # Création du dictionnaire de sortie
     keys=["Type_val","rating_val","status_val","duration_val",
@@ -357,11 +361,11 @@ def print_infos(selection,idx,NaN=''):
                 elif k=="related_anime":
                     for key in anime[k].keys():
                         table=[]
-                        link= ['''[{}]({})'''.format(title,'http://localhost:8050/page/'+title.replace(" ","%20")) for title in anime[k][key]]
+                        link= ['''[{}]({})'''.format(title,'http://localhost:8050/page/'+title.replace(" ","%20").replace("/","U+002F")) for title in anime[k][key]]
                         table.append({'Link':key,'Titles':'\n'.join(link)})
                 elif k=="image":
                     image=anime[k]
-        result_title='''#### {} \nResult {} on {}'''.format(fields["main_title"],idx+1,len(selection))
+        result_title='''#### {} \nResult {} on {}'''.format(fields["main_title"].replace("U+002F","/"),idx+1,len(selection))
 
     return infos.format(fields["other_titles"],
                         fields["Type"],fields["genres"],
@@ -446,20 +450,45 @@ def partiesliste(seq):
     Returns:
         liste des sous-ensembles de seq
     """
-    p = []
-    i, imax = 0, 2**len(seq)-1
-    while i <= imax:
-        s = []
-        j, jmax = 0, len(seq)-1
-        while j <= jmax:
-            if (i>>j)&1 == 1:
-                s.append(seq[j])
-            j += 1
-        if len(s)>1:
-            p.append(s)
-        i += 1
-    p.sort(key=len,reverse=True)
-    return p
+    if len(seq)>1:
+        p = []
+        i, imax = 0, 2**len(seq)-1
+        while i <= imax:
+            s = []
+            j, jmax = 0, len(seq)-1
+            while j <= jmax:
+                if (i>>j)&1 == 1:
+                    s.append(seq[j])
+                j += 1
+            if len(s)>1:
+                p.append(s)
+            i += 1
+        p.sort(key=len,reverse=True)
+        return p
+    return seq
+
+
+def genre_combinations(genres):
+    """
+    Détermination des différentes combinaisons de genres
+    pouvant plaire à l'utilisateur
+
+    Args:
+        genres: liste des genres plaisant à l'utilisateur
+    
+    Returns:
+        liste des combinaisons pouvant plaire
+    """
+    list_genres=[set(elt) for elt in genres]
+    intersection= list_genres[0]
+    for elt in list_genres:
+        intersection= intersection & elt
+    if len(intersection)==0:
+        list_genres=[]
+        for elt in genres:
+            list_genres = list_genres + elt
+        return partiesliste(list_genres)
+    return partiesliste(list(intersection)) 
 
 
 def anime_Recommendation(titles,collection,options,champs=["genres","duration","episodes","aired.start","main_title"],max_result=100):
@@ -493,12 +522,9 @@ def anime_Recommendation(titles,collection,options,champs=["genres","duration","
         clean_yet=True
         under_max=(len(selection[-1])<=max_result & len(selection[-1])>0)
         if not under_max:
-            genres_c=[set(elt) for elt in ref_infos["genres"]]
-            common_genres=genres_c[0]
-            for elt in genres_c:
-                common_genres = elt&common_genres
+            common_genres=genre_combinations(ref_infos["genres"])
             if len(common_genres)==1:
-                request=make_request(options=options,genres={'radio':'Exactly with',"check":list(common_genres)})
+                request=make_request(options=options,genres={'radio':'Exactly with',"check":common_genres})
                 select=select_anime(request,collection,champs=["main_title"],
                                     sort={"fields":["score","popularity"],"order":[-1,-1]})
                 select= set(select).difference(ref_infos["main_title"])
@@ -507,7 +533,7 @@ def anime_Recommendation(titles,collection,options,champs=["genres","duration","
                     clean_yet=True
                     under_max=(len(selection[-1])<=max_result)
             elif len(common_genres)>1:
-                common_genres,len_common=partiesliste(list(common_genres)),-1
+                len_common=-1
                 selection2,Request=[],[]
                 for elt in common_genres:
                     request=make_request(options=options,genres={'radio':'Exactly with',"check":elt})

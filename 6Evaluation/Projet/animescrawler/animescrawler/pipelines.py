@@ -24,7 +24,7 @@ class AnimescrawlerPipeline:
             AnimeItem traité devant être stocké dans une base mongo
         """
         if item["main_title"]:
-            item["main_title"]=clean_string(item["main_title"])
+            item["main_title"]=clean_string(item["main_title"]).replace("/","U+002F")
         if item["score"]:
             item["score"]=clean_number(item["score"],"float")
         if item["synopsis"]:

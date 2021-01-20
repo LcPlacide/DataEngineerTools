@@ -512,8 +512,10 @@ if __name__ == "__main__":
                             anime[key]["start"]=str(anime[key]["start"])
                         elif type(anime[key]["start"])==type(datetime.datetime.today()):
                             anime[key]["start"]=str(anime[key]["start"].date())
-                    if key in ["score","episoded","ranked","popularity"]:
+                    elif key in ["score","episoded","ranked","popularity"]:
                         anime[key]==str(anime[key])
+                    elif key=="main_title":
+                        anime["main_title"]={'url':anime["main_title"],"print":anime["main_title"].replace("U+002F","/")}
                     
                 else:
                     if key=="aired":
@@ -534,18 +536,20 @@ if __name__ == "__main__":
         for anime in results:
             for key in anime.keys():
                 if anime[key] not in NA:
-                    if key=="aired" and "start" in anime[key].keys():
+                    if key=="main_title":
+                        anime["main_title"]=anime["main_title"].replace("U+002F","/")
+                    elif key=="aired" and "start" in anime[key].keys():
                         if type(anime[key]["start"])==int:
                             anime[key]["start"]=str(anime[key]["start"])
                         elif type(anime[key]["start"])==type(datetime.datetime.today()):
                             anime[key]["start"]=str(anime[key]["start"].date())
-                    if key in ["score","episoded","ranked","popularity","duration"]:
+                    elif key in ["score","episoded","ranked","popularity","duration"]:
                         anime[key]==str(anime[key])
                     elif type(anime['duration'])==type(datetime.datetime.today()):
                             anime['duration']=str(anime['duration'].time())
                     elif key in ["genres","other_titles","producers"]:
                         anime[key]=", ".join(anime[key])
-                    if key=="aired" and "end" in anime[key].keys():
+                    elif key=="aired" and "end" in anime[key].keys():
                         if type(anime[key]["end"])==int:
                             anime[key]["end"]=str(anime[key]["end"])
                         elif type(anime[key]["end"])==type(datetime.datetime.today()):
