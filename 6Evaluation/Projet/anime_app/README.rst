@@ -93,7 +93,8 @@ Les fonctions suivantes sont dans controls.py:
     * clean_selection() supprime dans une sélection d'animés les animés liés entre eux. Dans un ensemble d'animés reliés entre eux, seul l'un d'entre eux est conservé dans la liste.
     * find_references() extrait et met en forme les informations des animés appréciés par l'utilisateur pour l'algorithme de Recommendation
     * anime_Recommendation() renvoie une liste d'animés recommandés à l'utilisateur suivant les titres qu'il a saisie au prélable dans l'UI. On passe à cette fonction un nombre maximal de recommandations afin qu'elle ajuste la complexité de la requête (tant que le nombre de recommandatiobs n'est pas inférieur à ce nombre, on ajoute des champs à la requête). Les champs concernés sont: les genres, la durée par épisode, le nombre d'épisodes et l'année de la première diffusion. Le filtre de genres qui est présent par défaut à également plusieurs niveaux de complexité suivant le nombre de genres (1,2,....n) partagés entre les animés recommandés et les animés appréciés (couvrant n genres distincts).
-    * partieliste() détermine les différents sous-ensembles issus de la liste passée en argument. Cette fonction est utilisée afin de construire les requêtes fitrant les genres dans anime_Recommendation().
+    * partieliste() détermine les différents sous-ensembles issus de la liste passée en argument. Cette fonction est utilisée afin de construire les requêtes filtrant les genres dans anime_Recommendation().
+    * genres_combinations() renvoie les listes des combinaisons de genres pouvant plaire à l'utilisateur. Cette fonction appelle la fonction partielistes().
     * to_time() convertit des durées en secondes en datetime.time ou datetime.datetime. Cette fonction est appelée par anime_recommendation() lors que la crétion du filtre sur le champs duration.
 
 =====================
