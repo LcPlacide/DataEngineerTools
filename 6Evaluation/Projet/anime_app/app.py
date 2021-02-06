@@ -61,7 +61,7 @@ def build_banner():
         div html définissant l'en-tête de l'app
     """
     return html.Div([html.Div([html.A(html.Button("Home", id="home-button",style={"background-color":"#f9f9f9"}),href="http://localhost:8050/home")],className="one-third column"),
-                html.Div([html.Div([html.H3("ANIMES Recommendation PROJECT",
+                html.Div([html.Div([html.H3("ALLOANIME",
                                     style={"margin-bottom": "0px"},id="textopaque"),
                           html.H5("Advance search & Recommendation by other titles", 
                                 style={"margin-top": "0px"})
