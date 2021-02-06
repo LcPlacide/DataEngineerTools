@@ -96,6 +96,9 @@ Les fonctions suivantes sont dans controls.py:
     * partieliste() détermine les différents sous-ensembles issus de la liste passée en argument. Cette fonction est utilisée afin de construire les requêtes filtrant les genres dans anime_Recommendation().
     * genres_combinations() renvoie la liste des combinaisons de genres pouvant plaire à l'utilisateur. Cette fonction appelle la fonction partielistes().
     * to_time() convertit des durées en secondes en datetime.time ou datetime.datetime. Cette fonction est appelée par anime_recommendation() lors que la crétion du filtre sur le champs duration.
+    * home() définit la page d'accueil et permet de requéter et d'afficher tous les animés ayants le mot clé insérer dans la barre de recherche.
+    * page() permet d'avoir le détails des animés avec la mise en forme lorsqu'on clique le titre. Une fois que l'on a fait sa recherche dans la barre de la page d'accueil pour avoir des détails sur l'animés qui nous intéresse, on clique sur le titre.
+
 
 =====================
 Fonctions d'affichage
